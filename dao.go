@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -14,7 +15,7 @@ func initMysql(dsn string) {
 	DB = d
 }
 
-type TradeRecord struct {
+type Order struct {
 	Symbol                  string `json:"symbol" gorm:"column:symbol"`
 	OrderId                 int64  `json:"orderId" gorm:"column:orderId"`
 	ClientOrderId           string `json:"clientOrderId" gorm:"column:clientOrderId"`
@@ -44,10 +45,27 @@ type TradeRecord struct {
 	GoodTillDate            int    `json:"goodTillDate" gorm:"column:goodTillDate"`
 }
 
-func (TradeRecord) TableName() string {
-	return "trade_record"
+func (Order) TableName() string {
+	return "order"
 }
 
-func save() {
+type AccountTrade struct {
+	Buyer           bool   `json:"buyer" gorm:"column:buyer;type:tinyint(1);not_null"`
+	Commission      string `json:"commission" gorm:"column:commission;type:varchar(255);not_null"`
+	CommissionAsset string `json:"commissionAsset" gorm:"column:commissionAsset;type:varchar(255);not_null"`
+	ID              int    `json:"id" gorm:"column:id;primary_key;auto_increment"`
+	Maker           bool   `json:"maker" gorm:"column:maker;type:tinyint(1);not_null"`
+	OrderID         int    `json:"orderId" gorm:"column:orderId;type:bigint;not_null"`
+	Price           string `json:"price" gorm:"column:price;type:varchar(255);not_null"`
+	Qty             string `json:"qty" gorm:"column:qty;type:varchar(255);not_null"`
+	QuoteQty        string `json:"quoteQty" gorm:"column:quoteQty;type:varchar(255);not_null"`
+	RealizedPnl     string `json:"realizedPnl" gorm:"column:realizedPnl;type:varchar(255);not_null"`
+	Side            string `json:"side" gorm:"column:side;type:varchar(255);not_null"`
+	PositionSide    string `json:"positionSide" gorm:"column:positionSide;type:varchar(255);not_null"`
+	Symbol          string `json:"symbol" gorm:"column:symbol;type:varchar(255);not_null"`
+	Time            int64  `json:"time" gorm:"column:time;type:bigint;not_null"`
+}
 
+func (AccountTrade) TableName() string {
+	return "account_trade"
 }
