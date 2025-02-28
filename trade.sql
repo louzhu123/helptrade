@@ -11,7 +11,7 @@
  Target Server Version : 50726 (5.7.26)
  File Encoding         : 65001
 
- Date: 27/02/2025 17:59:03
+ Date: 28/02/2025 19:50:02
 */
 
 SET NAMES utf8mb4;
@@ -38,6 +38,25 @@ CREATE TABLE `account_trade`  (
   `maker` tinyint(1) NOT NULL,
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = MyISAM AUTO_INCREMENT = 580068016 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for combine_order
+-- ----------------------------
+DROP TABLE IF EXISTS `combine_order`;
+CREATE TABLE `combine_order`  (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `startTime` bigint(20) NULL DEFAULT NULL,
+  `endTime` bigint(20) NULL DEFAULT NULL,
+  `symbol` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
+  `pnl` float NULL DEFAULT NULL,
+  `positionSide` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
+  `side` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
+  `FirstOpenCumQuote` float NULL DEFAULT NULL,
+  `totalOpenCumQuote` float NULL DEFAULT NULL,
+  `totalCloseCumQuote` float NULL DEFAULT NULL,
+  `maxCumQuote` float NULL DEFAULT NULL,
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = MyISAM AUTO_INCREMENT = 217 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for order
