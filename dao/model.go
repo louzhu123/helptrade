@@ -1,19 +1,4 @@
-package main
-
-import (
-	"fmt"
-
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
-)
-
-func initMysql(dsn string) {
-	d, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
-	if err != nil {
-		fmt.Println("open mysql failed,", err)
-	}
-	DB = d
-}
+package dao
 
 type Order struct {
 	Symbol                  string `json:"symbol" gorm:"column:symbol"`
@@ -68,4 +53,21 @@ type AccountTrade struct {
 
 func (AccountTrade) TableName() string {
 	return "account_trade"
+}
+
+type CombineOrder struct {
+	Symbol             string  `json:"symbol"`
+	PnL                float64 `json:"pnl" gorm:"column:pnl"`
+	StartTime          int64   `json:"startTime" gorm:"column:startTime"`
+	EndTime            int64   `json:"endTime" gorm:"column:endTime"`
+	PositionSide       string  `json:"positionSide" gorm:"column:positionSide"`
+	Side               string  `json:"side"`
+	FirstOpenCumQuote  float64 `json:"firstOpenCumQuote" gorm:"column:firstOpenCumQuote"`
+	TotalOpenCumQuote  float64 `json:"totalOpenCumQuote" gorm:"column:totalOpenCumQuote"`
+	TotalCloseCumQuote float64 `json:"totalCloseCumQuote" gorm:"column:totalCloseCumQuote"`
+	MaxCumQuote        float64 `json:"maxCumQuote" gorm:"column:maxCumQuote"`
+}
+
+func (CombineOrder) TableName() string {
+	return "combine_order"
 }

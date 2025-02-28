@@ -1,4 +1,4 @@
-package main
+package Config
 
 type Config struct {
 	ApiKey      string      `json:"ApiKey" ini:"ApiKey" `

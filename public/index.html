@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>交易记录与复盘系统</title>
+    <!-- 引入Bootstrap -->
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .editable {
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .editable:hover {
+            background-color: #f8f9fa;
+        }
+
+        .profit-positive {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .profit-negative {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .table-header {
+            background: linear-gradient(45deg, #6c757d, #495057);
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container my-5">
+        <h2 class="mb-4">交易记录与复盘分析</h2>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-header">
+                    <tr>
+                        <th>日期</th>
+                        <th>交易品种</th>
+                        <th>类型</th>
+                        <th>价格</th>
+                        <th>数量</th>
+                        <th>盈亏</th>
+                        <th>交易复盘</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="transactions">
+                    <!-- 数据将通过JS动态加载 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 复盘编辑模态框 -->
+    <div class="modal fade" id="editModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">编辑交易复盘</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <textarea id="reviewEdit" class="form-control" rows="6"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="saveReview">保存修改</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入Bootstrap JS -->
+    <script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // 模拟API请求（实际使用时替换为真实API地址）
+        // async function fetchTransactions() {
+        //     // 模拟数据
+        //     return [
+        //         {
+        //             id: 1,
+        //             date: "2024-03-15",
+        //             symbol: "BTC/USDT",
+        //             type: "买入",
+        //             price: 68500,
+        //             quantity: 0.5,
+        //             profit: 2350,
+        //             review: "突破关键阻力位入场，设置止损在67500"
+        //         },
+        //         {
+        //             id: 2,
+        //             date: "2024-03-16",
+        //             symbol: "ETH/USDT",
+        //             type: "卖出",
+        //             price: 3650,
+        //             quantity: 2,
+        //             profit: -820,
+        //             review: "误判市场趋势，过早止盈"
+        //         }
+        //     ];
+        // }
+
+        async function fetchTransactions() {
+            try {
+                const response = await fetch('http://127.0.0.1:8080/getCombineOrderList', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        // 'Authorization': 'Bearer ' + localStorage.getItem('token'), // 假设使用JWT验证
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    // 如需查询参数可添加：
+                    // params: new URLSearchParams({
+                    //     page: 1,
+                    //     per_page: 20,
+                    //     start_date: '2024-01-01'
+                    // })
+                });
+
+                // 处理HTTP错误状态
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `HTTP错误! 状态码: ${response.status}`);
+                }
+
+                // 解析JSON数据
+                const data = await response.json();
+                console.log(data)
+
+                // 转换数据格式（根据实际API响应结构调整）
+                return data.message.map(item => ({
+                    // id: item.id,
+                    date: new Date(item.startTime).toISOString().split('T')[0],
+                    symbol: item.symbol,
+                    type: item.positionSide === 'LONG' ? '买入' : '卖出',
+                    price: parseFloat(item.price),
+                    quantity: parseFloat(item.firstOpenCumQuote),
+                    profit: parseFloat(item.pnl),
+                    review: item.comment || "暂无复盘记录"
+                }));
+
+            } catch (error) {
+                console.error('获取交易记录失败:', error);
+                // 显示错误提示（可根据需要添加UI提示）
+                alert(`数据加载失败: ${error.message}`);
+                return []; // 返回空数组保证页面正常渲染
+            }
+        }
+
+        // 渲染表格数据
+        async function renderTable() {
+            const transactions = await fetchTransactions();
+            const tbody = document.getElementById('transactions');
+
+            tbody.innerHTML = transactions.map(transaction => `
+                <tr data-id="${transaction.id}">
+                    <td>${transaction.date}</td>
+                    <td>${transaction.symbol}</td>
+                    <td><span class="badge ${transaction.type === '买入' ? 'bg-success' : 'bg-danger'}">${transaction.type}</span></td>
+                    <td>${transaction.price.toLocaleString()}</td>
+                    <td>${transaction.quantity}</td>
+                    <td class="${transaction.profit >= 0 ? 'profit-positive' : 'profit-negative'}">
+                        ${transaction.profit >= 0 ? '+' : ''}${transaction.profit.toLocaleString()}
+                    </td>
+                    <td class="editable review-content">${transaction.review}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary edit-btn">编辑</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // 初始化编辑功能
+        function initEdit() {
+            let currentTransaction = null;
+
+            // 点击编辑按钮
+            document.addEventListener('click', async (e) => {
+                if (e.target.classList.contains('edit-btn')) {
+                    const row = e.target.closest('tr');
+                    currentTransaction = {
+                        id: row.dataset.id,
+                        review: row.querySelector('.review-content').innerText
+                    };
+
+                    document.getElementById('reviewEdit').value = currentTransaction.review;
+                    new bootstrap.Modal('#editModal').show();
+                }
+            });
+
+            // 保存修改
+            document.getElementById('saveReview').addEventListener('click', async () => {
+                const newReview = document.getElementById('reviewEdit').value;
+
+                try {
+                    // 这里应该发送PUT/PATCH请求到后端API
+                    // await fetch(`/api/transactions/${currentTransaction.id}`, {
+                    //     method: 'PATCH',
+                    //     headers: {
+                    //         'Content-Type': 'application/json'
+                    //     },
+                    //     body: JSON.stringify({ review: newReview })
+                    // });
+
+                    // 更新本地数据
+                    const row = document.querySelector(`tr[data-id="${currentTransaction.id}"]`);
+                    row.querySelector('.review-content').innerText = newReview;
+
+                    new bootstrap.Modal('#editModal').hide();
+                    alert('复盘记录更新成功！');
+                } catch (error) {
+                    console.error('保存失败:', error);
+                    alert('保存失败，请稍后重试');
+                }
+            });
+        }
+
+        // 初始化
+        (async function init() {
+            await renderTable();
+            initEdit();
+        })();
+    </script>
+</body>
+
+</html>
