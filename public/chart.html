@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>币安合约K线查看器</title>
+    <style>
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .input-group {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        input, button {
+            padding: 8px 12px;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        input[type="datetime-local"] {
+            width: 220px;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        #tvchart {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="input-group">
+            <input type="text" 
+                   id="symbol" 
+                   placeholder="输入交易品种 (如BTCUSDT)"
+                   value="BTCUSDT"
+                   required>
+            
+            <input type="datetime-local" 
+                   id="datetime" 
+                   required>
+            
+            <button onclick="loadChart()">加载K线</button>
+        </div>
+        <div id="tvchart"></div>
+    </div>
+
+    <!-- TradingView库 -->
+    <script src="https://s3.tradingview.com/tv.js"></script>
+
+    <script>
+        let chartWidget = null;
+        
+        // 初始化默认时间（前一天）
+        document.addEventListener('DOMContentLoaded', function() {
+            const now = new Date();
+            now.setDate(now.getDate() - 1);
+            const isoString = now.toISOString().slice(0, 16);
+            document.getElementById('datetime').value = isoString;
+            loadChart();
+        });
+
+        function loadChart() {
+            // 获取输入值
+            const symbol = document.getElementById('symbol').value.toUpperCase();
+            const datetime = document.getElementById('datetime').value;
+            
+            if (!symbol || !datetime) {
+                alert('请填写交易品种和时间');
+                return;
+            }
+
+            // 计算时间范围（前后各1天）
+            const selectedDate = new Date(datetime);
+            const from = selectedDate.getTime() - 86400000; // 前一天
+            const to = selectedDate.getTime() + 86400000;   // 后一天
+
+            // 销毁旧图表
+            if (chartWidget !== null) {
+                chartWidget.remove();
+                chartWidget = null;
+            }
+
+            // 创建新图表
+            chartWidget = new TradingView.widget({
+                container_id: 'tvchart',
+                autosize: true,
+                symbol: `BINANCE:${symbol}`, // 币安交易对
+                interval: '60',              // 1小时K线
+                timezone: 'Etc/UTC',
+                theme: 'dark',
+                style: '1',
+                toolbar_bg: '#f1f3f6',
+                range: {
+                    from: new Date(from),
+                    to: new Date(to)
+                },
+                studies: [],
+                locale: 'zh'                 // 中文界面
+            });
+        }
+    </script>
+</body>
+</html>

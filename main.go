@@ -58,6 +58,10 @@ func CORSMiddleware() gin.HandlerFunc {
 }
 
 func main() {
+	// list := dao.CombineAccountOrder()
+	// dao.SaveCombineOrder(list)
+	// select {}
+
 	// 创建一个默认的路由引擎
 	r := gin.Default()
 
@@ -65,18 +69,14 @@ func main() {
 
 	// 定义一个 GET 接口
 	r.GET("/getCombineOrderList", controller.GetCombineOrderList)
+	r.POST("/editCommnet", controller.EditCommnet)
 
 	// 启动服务器，默认在0.0.0.0:8080启动服务
 	r.Run()
-	// dao.SelectAccountTradeGroupByOrderId()
-	// list := dao.CombineAccountOrder()
-	// dao.SaveCombineOrder(list)
-	// futuresClient := binance.NewFuturesClient(global.Cfg.ApiKey, global.Cfg.SecretKey)
-	// res, err := futuresClient.newtrade().Do(context.Background())
-	// fmt.Println(err)
-	// fmt.Println(res)
-	// res, err := futuresClient.NewListOrdersService().Do(context.Background())
 
+	// futuresClient := binance.NewFuturesClient(global.Cfg.ApiKey, global.Cfg.SecretKey)
+
+	// res, err := futuresClient.NewListOrdersService().Do(context.Background())
 	// if err != nil {
 	// 	fmt.Println(err)
 	// }
@@ -84,28 +84,26 @@ func main() {
 	// for _, v := range res {
 	// 	//fmt.Printf("%+v", v)
 	// 	//j, _ := json.Marshal(v)
-	// 	saveErr := DB.Model(Order{}).Create(&v).Error
+	// 	saveErr := global.DB.Model(dao.Order{}).Create(&v).Error
 	// 	if saveErr != nil {
 	// 		fmt.Println(err)
 	// 	}
 	// }
 
 	// {"buyer":true,"commission":"0.00301236","commissionAsset":"USDT","id":32684952,"maker":false,"orderId":221465321,"price":"1.544800","qty":"3.9","quoteQty":"6.0247200","realizedPnl":"-0.03595577","side":"BUY","positionSide":"SHORT","symbol":"KAITOUSDT","time":1740295944617}
-	// 	res, err := futuresClient.NewListAccountTradeService().Do(context.Background())
-	// 	if err != nil {
+	// res, err := futuresClient.NewListAccountTradeService().Do(context.Background())
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+	// // fmt.Println(res)
+	// for _, v := range res {
+	// 	//fmt.Printf("%+v", v)
+	// 	j, _ := json.Marshal(v)
+	// 	fmt.Println(string(j))
+	// 	saveErr := global.DB.Model(dao.AccountTrade{}).Create(&v).Error
+	// 	if saveErr != nil {
 	// 		fmt.Println(err)
+	// 		break
 	// 	}
-	// 	// fmt.Println(res)
-	// 	for _, v := range res {
-	// 		//fmt.Printf("%+v", v)
-	// 		j, _ := json.Marshal(v)
-	// 		fmt.Println(string(j))
-	// 		saveErr := DB.Model(AccountTrade{}).Create(&v).Error
-	// 		if saveErr != nil {
-	// 			fmt.Println(err)
-	// 			break
-	// 		}
-	// 	}
-
-	// 查询根据orderid group
+	// }
 }

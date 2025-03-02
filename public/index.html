@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>交易记录与复盘系统</title>
     <!-- 引入Bootstrap -->
-    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="./bootstrap.min.css" rel="stylesheet">
     <style>
         .editable {
             cursor: pointer;
@@ -18,12 +18,12 @@
         }
 
         .profit-positive {
-            color: #28a745;
+            color: #28a745 !important;;
             font-weight: bold;
         }
 
         .profit-negative {
-            color: #dc3545;
+            color:#dc3545  !important;
             font-weight: bold;
         }
 
@@ -44,8 +44,10 @@
                         <th>日期</th>
                         <th>交易品种</th>
                         <th>类型</th>
-                        <th>价格</th>
-                        <th>数量</th>
+                        <th>开仓价格</th>
+                        <th>平仓价格</th>
+                        <th>开仓</th>
+                        <th>最大持仓</th>
                         <th>盈亏</th>
                         <th>交易复盘</th>
                         <th>操作</th>
@@ -78,7 +80,7 @@
     </div>
 
     <!-- 引入Bootstrap JS -->
-    <script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="./bootstrap.bundle.min.js"></script>
 
     <script>
         // 模拟API请求（实际使用时替换为真实API地址）
@@ -137,12 +139,14 @@
 
                 // 转换数据格式（根据实际API响应结构调整）
                 return data.message.map(item => ({
-                    // id: item.id,
+                    id: item.id,
                     date: new Date(item.startTime).toISOString().split('T')[0],
                     symbol: item.symbol,
                     type: item.positionSide === 'LONG' ? '买入' : '卖出',
-                    price: parseFloat(item.price),
+                    openPrice: parseFloat(item.openPrice),
+                    closePrice: parseFloat(item.closePrice),
                     quantity: parseFloat(item.firstOpenCumQuote),
+                    maxQuantity:parseFloat(item.maxCumQuote),
                     profit: parseFloat(item.pnl),
                     review: item.comment || "暂无复盘记录"
                 }));
@@ -165,8 +169,10 @@
                     <td>${transaction.date}</td>
                     <td>${transaction.symbol}</td>
                     <td><span class="badge ${transaction.type === '买入' ? 'bg-success' : 'bg-danger'}">${transaction.type}</span></td>
-                    <td>${transaction.price.toLocaleString()}</td>
+                    <td>${transaction.openPrice}</td>
+                    <td>${transaction.closePrice}</td>
                     <td>${transaction.quantity}</td>
+                    <td>${transaction.maxQuantity}</td>
                     <td class="${transaction.profit >= 0 ? 'profit-positive' : 'profit-negative'}">
                         ${transaction.profit >= 0 ? '+' : ''}${transaction.profit.toLocaleString()}
                     </td>
@@ -187,7 +193,7 @@
                 if (e.target.classList.contains('edit-btn')) {
                     const row = e.target.closest('tr');
                     currentTransaction = {
-                        id: row.dataset.id,
+                        id: Number(row.dataset.id),
                         review: row.querySelector('.review-content').innerText
                     };
 
@@ -202,20 +208,23 @@
 
                 try {
                     // 这里应该发送PUT/PATCH请求到后端API
+                    await fetch('http://127.0.0.1:8080/editCommnet', {
                     // await fetch(`/api/transactions/${currentTransaction.id}`, {
-                    //     method: 'PATCH',
-                    //     headers: {
-                    //         'Content-Type': 'application/json'
-                    //     },
-                    //     body: JSON.stringify({ review: newReview })
-                    // });
+                        // await fetch('http://127.0.0.1:8080/getCombineOrderList', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ id:currentTransaction.id,comment: newReview })
+                    });
 
                     // 更新本地数据
                     const row = document.querySelector(`tr[data-id="${currentTransaction.id}"]`);
                     row.querySelector('.review-content').innerText = newReview;
-
-                    new bootstrap.Modal('#editModal').hide();
                     alert('复盘记录更新成功！');
+
+                    const editModal = bootstrap.Modal.getInstance(document.getElementById('editModal'));
+                    editModal.hide();
                 } catch (error) {
                     console.error('保存失败:', error);
                     alert('保存失败，请稍后重试');

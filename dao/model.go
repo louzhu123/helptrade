@@ -56,6 +56,7 @@ func (AccountTrade) TableName() string {
 }
 
 type CombineOrder struct {
+	Id                 int64   `json:"id" gorm:"column:id"`
 	Symbol             string  `json:"symbol"`
 	PnL                float64 `json:"pnl" gorm:"column:pnl"`
 	StartTime          int64   `json:"startTime" gorm:"column:startTime"`
@@ -66,6 +67,9 @@ type CombineOrder struct {
 	TotalOpenCumQuote  float64 `json:"totalOpenCumQuote" gorm:"column:totalOpenCumQuote"`
 	TotalCloseCumQuote float64 `json:"totalCloseCumQuote" gorm:"column:totalCloseCumQuote"`
 	MaxCumQuote        float64 `json:"maxCumQuote" gorm:"column:maxCumQuote"`
+	Comment            string  `json:"comment" gorm:"column:comment"`
+	OpenPrice          float64 `json:"openPrice" gorm:"column:openPrice"`
+	ClosePrice         float64 `json:"closePrice" gorm:"column:closePrice"`
 }
 
 func (CombineOrder) TableName() string {

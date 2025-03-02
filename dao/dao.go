@@ -50,6 +50,7 @@ func CombineAccountOrder() []CombineOrder {
 		endFlag := false
 		executedQtyFloat, _ := strconv.ParseFloat(v.ExecutedQty, 64)
 		cumQuoteFloat, _ := strconv.ParseFloat(v.CumQuote, 64)
+		avgPriceFloat, _ := strconv.ParseFloat(v.AvgPrice, 64)
 		if executedQtyFloat == 0 { // 无效订单，开了没执行的后面关了的
 			continue
 		}
@@ -63,10 +64,12 @@ func CombineAccountOrder() []CombineOrder {
 			tmpOrder.Order.PositionSide = v.PositionSide
 			tmpOrder.Order.Side = v.Side
 			tmpOrder.Order.Symbol = v.Symbol
+			tmpOrder.Order.OpenPrice = avgPriceFloat
 			tmpOrder.Order.FirstOpenCumQuote = cumQuoteFloat
 		} else if v.Side != tmpOrder.Order.Side && executedQtyFloat-tmpOrder.CurrentPostion == 0 { //结束
 			endFlag = true
 			tmpOrder.Order.EndTime = v.Time
+			tmpOrder.Order.ClosePrice = avgPriceFloat
 		}
 
 		if v.Side == tmpOrder.Order.Side {
@@ -117,9 +120,13 @@ func SaveCombineOrder(list []CombineOrder) {
 
 func QueryCombineOrder() ([]CombineOrder, error) {
 	var list []CombineOrder
-	err := global.DB.Model(&CombineOrder{}).Find(&list).Error
+	err := global.DB.Model(&CombineOrder{}).Order("startTime desc").Find(&list).Error
 	if err != nil {
 		return list, err
 	}
 	return list, nil
+}
+
+func UpdateCombineOrderComment(id int64, comment string) {
+	global.DB.Table("combine_order").Where("id", id).Update("comment", comment)
 }
