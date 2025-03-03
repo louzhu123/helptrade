@@ -196,16 +196,56 @@
             const transactions = await fetchTransactions();
             const tbody = document.getElementById('transactions');
 
+            let count = 0
+            let totalCommission = 0 
+            let totalProfit = 0
+            let totalTakeTime = 0
+            let totalFirstOpenCumQuote = 0
+            let totalMaxCumQuote = 0
+            let avgTakeTime = 0
+            let avgFirstOpenCumQuote = 0
+            let avgMaxCumQuote = 0
 
-            tbody.innerHTML = transactions.map(transaction => `
+            transactions.forEach(element => {
+                count += 1
+                totalCommission += element.commission
+                totalProfit += element.profit
+                totalTakeTime += element.endTime - element.startTime
+                totalFirstOpenCumQuote += element.quantity 
+                totalMaxCumQuote += element.maxQuantity
+            });
+
+            avgTakeTime = totalTakeTime / count / 1000 / 60 
+            avgFirstOpenCumQuote = totalFirstOpenCumQuote / count
+            avgMaxCumQuote = totalMaxCumQuote / count
+
+            tbody.innerHTML = `
+                <tr>
+                    <td>总计</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td>${avgFirstOpenCumQuote.toFixed(0)}</td>
+                    <td>${avgMaxCumQuote.toFixed(0)}</td>
+                    <td>${avgTakeTime.toFixed(0)}分钟</td>
+                    <td>${totalCommission.toFixed(2)}</td>
+                    <td>${totalProfit.toFixed(2)}</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            `
+            tbody.innerHTML += transactions.map(transaction => `
                 <tr data-id="${transaction.id}">
                     <td>${transaction.date}</td>
                     <td>${transaction.symbol}</td>
                     <td><span class="badge ${transaction.type === '买入' ? 'bg-success' : 'bg-danger'}">${transaction.type}</span></td>
                     <td>${transaction.openPrice}</td>
                     <td>${transaction.closePrice}</td>
-                    <td>${transaction.quantity}</td>
-                    <td>${transaction.maxQuantity}</td>
+                    <td>${transaction.quantity.toFixed(0)}</td>
+                    <td>${transaction.maxQuantity.toFixed(0)}</td>
                     <td>${getTakeTime(transaction)}</td>
                     <td>${transaction.commission.toFixed(2)}</td>
                     <td class="${transaction.profit >= 0 ? 'profit-positive' : 'profit-negative'}">
