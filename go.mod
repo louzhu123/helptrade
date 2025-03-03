@@ -1,4 +1,4 @@
-module main
+module helptrade
 
 go 1.22.1
 

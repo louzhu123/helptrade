@@ -1,25 +1,38 @@
 package dao
 
 import (
+	"encoding/json"
 	"fmt"
-	"main/global"
+	"helptrade/global"
 	"strconv"
 	"time"
+
+	"github.com/adshao/go-binance/v2/futures"
+	"gorm.io/gorm"
 )
 
-func SelectAccountTradeGroupByOrderId() {
-	list := make([]AccountTrade, 0)
-	err := global.DB.Model(AccountTrade{}).Group("orderId,symbol,time").
-		Select("sum(realizedPnl) as realizedPnl", "symbol", "time").
-		Order("time").
-		Find(&list).Error
+func UpdateCombineOrderComment(id int64, comment string) {
+	global.DB.Table("combine_order").Where("id", id).Update("comment", comment)
+}
+
+func QueryCombineOrder() ([]CombineOrder, error) {
+	var list []CombineOrder
+	err := global.DB.Model(&CombineOrder{}).Order("startTime desc").Find(&list).Error
 	if err != nil {
-		fmt.Println(err)
+		return list, err
 	}
-	// fmt.Println(list)
-	for _, v := range list {
-		t := time.UnixMilli(v.Time).Format("2006-01-02 15:04:05")
-		fmt.Println(t, v.Symbol, v.RealizedPnl)
+	return list, nil
+}
+
+func GetTotalCommissionByOrderId(orderId int64) float64 {
+	var data []float64
+	global.DB.Model(AccountTrade{}).Select("sum(commission) as commission").
+		Where("orderId", orderId).Pluck("commission", &data)
+
+	if len(data) > 0 {
+		return data[0]
+	} else {
+		return 0
 	}
 }
 
@@ -32,6 +45,7 @@ func GetAllOrder() ([]Order, error) {
 type TmpCombineOrder struct {
 	CurrentPostion  float64
 	CurrentCumQuote float64
+	OriginOrders    []Order
 	Order           CombineOrder
 }
 
@@ -59,6 +73,11 @@ func CombineAccountOrder() []CombineOrder {
 			tmpCombineOrder[v.Symbol] = TmpCombineOrder{}
 		}
 		tmpOrder := tmpCombineOrder[v.Symbol]
+
+		// 手续费
+		commission := GetTotalCommissionByOrderId(v.OrderId)
+		tmpOrder.Order.Commission += commission
+
 		if tmpOrder.CurrentPostion == 0 { // 新开仓
 			tmpOrder.Order.StartTime = v.Time
 			tmpOrder.Order.PositionSide = v.PositionSide
@@ -85,7 +104,7 @@ func CombineAccountOrder() []CombineOrder {
 			tmpOrder.Order.MaxCumQuote = tmpOrder.CurrentCumQuote
 		}
 
-		fmt.Println(executedQtyFloat, tmpOrder.CurrentPostion)
+		tmpOrder.OriginOrders = append(tmpOrder.OriginOrders, v)
 
 		tmpCombineOrder[v.Symbol] = tmpOrder
 
@@ -100,6 +119,9 @@ func CombineAccountOrder() []CombineOrder {
 			if tmpOrder.Order.MaxCumQuote < tmpOrder.Order.TotalCloseCumQuote {
 				tmpOrder.Order.MaxCumQuote = tmpOrder.Order.TotalCloseCumQuote
 			}
+
+			originOrdersStr, _ := json.Marshal(tmpOrder.OriginOrders)
+			tmpOrder.Order.OriginOrders = string(originOrdersStr)
 			combineOrderList = append(combineOrderList, tmpOrder.Order)
 			tmpCombineOrder[v.Symbol] = TmpCombineOrder{}
 		}
@@ -107,26 +129,46 @@ func CombineAccountOrder() []CombineOrder {
 
 	for _, v := range combineOrderList {
 		t := time.UnixMilli(v.StartTime).Format("2006-01-02 15:04:05")
-		fmt.Printf("%v %v %v pnl:%.2f \n", t, v.Side, v.Symbol, v.PnL, v.MaxCumQuote)
+		fmt.Printf("%v %v %v pnl:%.2f \n", t, v.Side, v.Symbol, v.PnL)
 	}
 
 	return combineOrderList
 }
 
-func SaveCombineOrder(list []CombineOrder) {
+func SaveCombineOrder(list []CombineOrder) error {
 	err := global.DB.Model(CombineOrder{}).Save(list).Error
-	fmt.Println(err)
+	return err
 }
 
-func QueryCombineOrder() ([]CombineOrder, error) {
-	var list []CombineOrder
-	err := global.DB.Model(&CombineOrder{}).Order("startTime desc").Find(&list).Error
-	if err != nil {
-		return list, err
+func UpsertCombineOrder(list []CombineOrder) {
+	for _, v := range list {
+		m := CombineOrder{}
+		// 根据开仓时间和标的即可标识
+		where := global.DB.Model(CombineOrder{}).Where("startTime = ?", v.StartTime).Where("symbol = ?", v.Symbol)
+		err := where.First(&m).Error
+		if err == gorm.ErrRecordNotFound {
+			global.DB.Model(CombineOrder{}).Save(&v)
+		}
+		// else if err == nil {
+		// 	where.Update("commission", v.Commission) // 每次修改字段的时候修改
+		// }
 	}
-	return list, nil
 }
 
-func UpdateCombineOrderComment(id int64, comment string) {
-	global.DB.Table("combine_order").Where("id", id).Update("comment", comment)
+func UpsertAccountTrade(data *futures.AccountTrade) {
+	m := AccountTrade{}
+	where := global.DB.Model(AccountTrade{}).Where("id", data.ID)
+	err := where.First(&m).Error
+	if err == gorm.ErrRecordNotFound {
+		global.DB.Model(AccountTrade{}).Save(data)
+	}
+}
+
+func UpsertOrder(data *futures.Order) {
+	m := Order{}
+	where := global.DB.Model(Order{}).Where("orderId", data.OrderID)
+	err := where.First(&m).Error
+	if err == gorm.ErrRecordNotFound {
+		global.DB.Model(Order{}).Save(data)
+	}
 }

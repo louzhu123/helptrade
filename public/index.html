@@ -18,12 +18,13 @@
         }
 
         .profit-positive {
-            color: #28a745 !important;;
+            color: #28a745 !important;
+            ;
             font-weight: bold;
         }
 
         .profit-negative {
-            color:#dc3545  !important;
+            color: #dc3545 !important;
             font-weight: bold;
         }
 
@@ -48,7 +49,10 @@
                         <th>平仓价格</th>
                         <th>开仓</th>
                         <th>最大持仓</th>
+                        <th>持仓时间</th>
+                        <th>手续费</th>
                         <th>盈亏</th>
+                        <th>幅度</th>
                         <th>交易复盘</th>
                         <th>操作</th>
                     </tr>
@@ -83,32 +87,6 @@
     <script src="./bootstrap.bundle.min.js"></script>
 
     <script>
-        // 模拟API请求（实际使用时替换为真实API地址）
-        // async function fetchTransactions() {
-        //     // 模拟数据
-        //     return [
-        //         {
-        //             id: 1,
-        //             date: "2024-03-15",
-        //             symbol: "BTC/USDT",
-        //             type: "买入",
-        //             price: 68500,
-        //             quantity: 0.5,
-        //             profit: 2350,
-        //             review: "突破关键阻力位入场，设置止损在67500"
-        //         },
-        //         {
-        //             id: 2,
-        //             date: "2024-03-16",
-        //             symbol: "ETH/USDT",
-        //             type: "卖出",
-        //             price: 3650,
-        //             quantity: 2,
-        //             profit: -820,
-        //             review: "误判市场趋势，过早止盈"
-        //         }
-        //     ];
-        // }
 
         async function fetchTransactions() {
             try {
@@ -116,7 +94,6 @@
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
-                        // 'Authorization': 'Bearer ' + localStorage.getItem('token'), // 假设使用JWT验证
                         'X-Requested-With': 'XMLHttpRequest'
                     },
                     // 如需查询参数可添加：
@@ -146,9 +123,14 @@
                     openPrice: parseFloat(item.openPrice),
                     closePrice: parseFloat(item.closePrice),
                     quantity: parseFloat(item.firstOpenCumQuote),
-                    maxQuantity:parseFloat(item.maxCumQuote),
+                    maxQuantity: parseFloat(item.maxCumQuote),
                     profit: parseFloat(item.pnl),
-                    review: item.comment || "暂无复盘记录"
+                    review: item.comment || "暂无复盘记录",
+                    startTime: item.startTime,
+                    endTime: item.endTime,
+                    positionSide: item.positionSide,
+                    originOrders: JSON.parse(item.originOrders),
+                    commission: item.commission
                 }));
 
             } catch (error) {
@@ -159,10 +141,61 @@
             }
         }
 
+        function getBsHref(transaction) {
+            // 根据时间选择时间间隔
+            let diff = (transaction.endTime - transaction.startTime) / 1000
+            let interval = "1m"
+            if (diff < 60 * 60 * 1) { // 持仓时间1h内，用1m
+                interval = "1m";
+            } else if (diff < 60 * 60 * 5) {  // 持仓时间5h内，用5m
+                interval = "5m";
+            } else if (diff < 60 * 60 * 15) { // 持仓时间15h内，用15m
+                interval = "15m"
+            } else if (diff < 60 * 60 * 60) { // 持仓时间60h内，用1h
+                interval = "1h"
+            } else if (diff < 60 * 60 * 240) {// 持仓时间240h内，用4h
+                interval = "4h"
+            }
+
+            let originOrders = transaction.originOrders
+            let bsHref = `<a target="_blank" href="chart.html?symbol=${transaction.symbol}&interval=${interval}&startTime=${transaction.startTime - 60 * 60 * 1000}`
+            bsHref += originOrders.map(item => `&${item.side == 'BUY' ? 'b' : 's'}=${item.time},${item.avgPrice}`).join('');
+            bsHref += `">b/s</a>`
+            return bsHref
+        }
+
+        function getTakeTime(transaction) {
+            let second = (transaction.endTime - transaction.startTime) / 1000
+            if (second < 60) {
+                return Math.round(second) + "秒"
+            }
+            let min = second / 60
+            if (min < 60) {
+                return Math.round(min) + "分钟"
+            }
+            let h = min / 60
+            return Math.round(h) + "小时"
+        }
+
+        function getDiffPercent(transaction) {
+            let diff = transaction.closePrice - transaction.openPrice
+            if (diff < 0) {
+                diff = -diff
+            }
+            let percent = (diff / transaction.openPrice) * 100
+            percent = percent.toFixed(1);
+            if (transaction.profit > 0) {
+                return percent
+            }else {
+                return -percent
+            }
+        }
+
         // 渲染表格数据
         async function renderTable() {
             const transactions = await fetchTransactions();
             const tbody = document.getElementById('transactions');
+
 
             tbody.innerHTML = transactions.map(transaction => `
                 <tr data-id="${transaction.id}">
@@ -173,12 +206,18 @@
                     <td>${transaction.closePrice}</td>
                     <td>${transaction.quantity}</td>
                     <td>${transaction.maxQuantity}</td>
+                    <td>${getTakeTime(transaction)}</td>
+                    <td>${transaction.commission.toFixed(2)}</td>
                     <td class="${transaction.profit >= 0 ? 'profit-positive' : 'profit-negative'}">
-                        ${transaction.profit >= 0 ? '+' : ''}${transaction.profit.toLocaleString()}
+                        ${transaction.profit >= 0 ? '+' : ''}${transaction.profit.toFixed(1)}
+                    </td>
+                    <td class="${getDiffPercent(transaction) >= 0 ? 'profit-positive' : 'profit-negative'}">
+                        ${getDiffPercent(transaction)}%
                     </td>
                     <td class="editable review-content">${transaction.review}</td>
                     <td>
                         <button class="btn btn-sm btn-outline-primary edit-btn">编辑</button>
+                        ${getBsHref(transaction)}
                     </td>
                 </tr>
             `).join('');
@@ -207,15 +246,12 @@
                 const newReview = document.getElementById('reviewEdit').value;
 
                 try {
-                    // 这里应该发送PUT/PATCH请求到后端API
                     await fetch('http://127.0.0.1:8080/editCommnet', {
-                    // await fetch(`/api/transactions/${currentTransaction.id}`, {
-                        // await fetch('http://127.0.0.1:8080/getCombineOrderList', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify({ id:currentTransaction.id,comment: newReview })
+                        body: JSON.stringify({ id: currentTransaction.id, comment: newReview })
                     });
 
                     // 更新本地数据

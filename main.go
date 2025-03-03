@@ -2,10 +2,12 @@ package main
 
 import (
 	"fmt"
-	Config "main/config"
-	"main/controller"
-	"main/global"
+	Config "helptrade/config"
+	"helptrade/controller"
+	"helptrade/global"
+	"helptrade/service"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-ini/ini"
@@ -58,20 +60,17 @@ func CORSMiddleware() gin.HandlerFunc {
 }
 
 func main() {
+	go func() {
+		for {
+			service.FetchAndCombineOrder()
+			time.Sleep(15 * time.Minute)
+		}
+	}()
 
-	// controller.FetchTradeData()
-	// select {}
-
-	// 创建一个默认的路由引擎
 	r := gin.Default()
-
 	r.Use(CORSMiddleware())
-
-	// 定义一个 GET 接口
 	r.GET("/getCombineOrderList", controller.GetCombineOrderList)
 	r.POST("/editCommnet", controller.EditCommnet)
 
-	// 启动服务器，默认在0.0.0.0:8080启动服务
 	r.Run()
-
 }

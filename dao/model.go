@@ -70,6 +70,8 @@ type CombineOrder struct {
 	Comment            string  `json:"comment" gorm:"column:comment"`
 	OpenPrice          float64 `json:"openPrice" gorm:"column:openPrice"`
 	ClosePrice         float64 `json:"closePrice" gorm:"column:closePrice"`
+	OriginOrders       string  `json:"originOrders" gorm:"column:originOrders"`
+	Commission         float64 `json:"commission" gorm:"column:commission"`
 }
 
 func (CombineOrder) TableName() string {

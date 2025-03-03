@@ -1,7 +1,7 @@
 package global
 
 import (
-	Config "main/config"
+	Config "helptrade/config"
 
 	"gorm.io/gorm"
 )
