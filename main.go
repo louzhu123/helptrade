@@ -58,8 +58,8 @@ func CORSMiddleware() gin.HandlerFunc {
 }
 
 func main() {
-	// list := dao.CombineAccountOrder()
-	// dao.SaveCombineOrder(list)
+
+	// controller.FetchTradeData()
 	// select {}
 
 	// 创建一个默认的路由引擎
@@ -74,36 +74,4 @@ func main() {
 	// 启动服务器，默认在0.0.0.0:8080启动服务
 	r.Run()
 
-	// futuresClient := binance.NewFuturesClient(global.Cfg.ApiKey, global.Cfg.SecretKey)
-
-	// res, err := futuresClient.NewListOrdersService().Do(context.Background())
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
-	// fmt.Println(res)
-	// for _, v := range res {
-	// 	//fmt.Printf("%+v", v)
-	// 	//j, _ := json.Marshal(v)
-	// 	saveErr := global.DB.Model(dao.Order{}).Create(&v).Error
-	// 	if saveErr != nil {
-	// 		fmt.Println(err)
-	// 	}
-	// }
-
-	// {"buyer":true,"commission":"0.00301236","commissionAsset":"USDT","id":32684952,"maker":false,"orderId":221465321,"price":"1.544800","qty":"3.9","quoteQty":"6.0247200","realizedPnl":"-0.03595577","side":"BUY","positionSide":"SHORT","symbol":"KAITOUSDT","time":1740295944617}
-	// res, err := futuresClient.NewListAccountTradeService().Do(context.Background())
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
-	// // fmt.Println(res)
-	// for _, v := range res {
-	// 	//fmt.Printf("%+v", v)
-	// 	j, _ := json.Marshal(v)
-	// 	fmt.Println(string(j))
-	// 	saveErr := global.DB.Model(dao.AccountTrade{}).Create(&v).Error
-	// 	if saveErr != nil {
-	// 		fmt.Println(err)
-	// 		break
-	// 	}
-	// }
 }

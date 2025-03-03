@@ -1,10 +1,13 @@
 package controller
 
 import (
+	"context"
+	"fmt"
 	"main/dao"
 	"main/global"
 	"net/http"
 
+	"github.com/adshao/go-binance/v2"
 	"github.com/gin-gonic/gin"
 )
 
@@ -30,4 +33,34 @@ func EditCommnet(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "ok",
 	})
+}
+
+func FetchTradeData() {
+	futuresClient := binance.NewFuturesClient(global.Cfg.ApiKey, global.Cfg.SecretKey)
+
+	res, err := futuresClient.NewListOrdersService().Do(context.Background())
+	if err != nil {
+		fmt.Println(err)
+	}
+	for _, v := range res {
+		saveErr := global.DB.Model(dao.Order{}).Create(&v).Error
+		if saveErr != nil {
+			fmt.Println(err)
+		}
+	}
+
+	res1, err := futuresClient.NewListAccountTradeService().Do(context.Background())
+	if err != nil {
+		fmt.Println(err)
+	}
+	for _, v := range res1 {
+		saveErr := global.DB.Model(dao.AccountTrade{}).Create(&v).Error
+		if saveErr != nil {
+			fmt.Println(err)
+			break
+		}
+	}
+
+	list := dao.CombineAccountOrder()
+	dao.SaveCombineOrder(list)
 }
