@@ -11,9 +11,33 @@ func UpdateCombineOrderComment(id int64, comment string) {
 	global.DB.Table("combine_order").Where("id", id).Update("comment", comment)
 }
 
-func QueryCombineOrder() ([]CombineOrder, error) {
+func QueryCombineOrder(req global.GetCombineOrderListReq) ([]CombineOrder, error) {
+	where := global.DB.Model(&CombineOrder{})
+	if req.OpenSide == "BUY" {
+		where.Where("positionSide", "LONG")
+	} else if req.OpenSide == "SELL" {
+		where.Where("positionSide", "SHORT")
+	}
+
+	if req.Symbol != "ALL" && req.Symbol != "" {
+		where.Where("symbol", req.Symbol)
+	}
+
+	if req.DateMax != 0 {
+		where.Where("startTime <= ?", req.DateMax)
+	}
+	if req.DateMin != 0 {
+		where.Where("startTIme >= ?", req.DateMin)
+	}
+	if req.AmountMax != 0 {
+		where.Where("maxCumQuote <= ?", req.AmountMax)
+	}
+	if req.AmountMin != 0 {
+		where.Where("maxCumQuote >= ?", req.AmountMin)
+	}
+
 	var list []CombineOrder
-	err := global.DB.Model(&CombineOrder{}).Order("startTime desc").Find(&list).Error
+	err := where.Order("startTime desc").Find(&list).Error
 	if err != nil {
 		return list, err
 	}
@@ -63,7 +87,7 @@ func UpsertAccountTrade(data *futures.AccountTrade) {
 	where := global.DB.Model(AccountTrade{}).Where("id", data.ID)
 	err := where.First(&m).Error
 	if err == gorm.ErrRecordNotFound {
-		global.DB.Model(AccountTrade{}).Save(data)
+		global.DB.Model(AccountTrade{}).Create(data)
 	}
 }
 
@@ -72,6 +96,6 @@ func UpsertOrder(data *futures.Order) {
 	where := global.DB.Model(Order{}).Where("orderId", data.OrderID)
 	err := where.First(&m).Error
 	if err == gorm.ErrRecordNotFound {
-		global.DB.Model(Order{}).Save(data)
+		global.DB.Model(Order{}).Create(data)
 	}
 }

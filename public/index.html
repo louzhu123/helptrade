@@ -11,6 +11,14 @@
         .editable {
             cursor: pointer;
             transition: background-color 0.3s;
+            white-space: nowrap;
+            /* 禁止换行 */
+            overflow: hidden;
+            /* 隐藏超出部分 */
+            text-overflow: ellipsis;
+            /* 超出部分显示省略号 */
+            max-width: 200px;
+            /* 设置最大宽度 */
         }
 
         .editable:hover {
@@ -28,9 +36,94 @@
             font-weight: bold;
         }
 
-        .table-header {
-            background: linear-gradient(45deg, #6c757d, #495057);
-            color: white;
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th,
+        td {
+            border: 1px solid #dddddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            cursor: pointer;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .asc::after {
+            content: " ▲";
+        }
+
+        .desc::after {
+            content: " ▼";
+        }
+
+        .filter-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 250px;
+            background-color: #ffffff;
+            border: 1px solid #cccccc;
+            border-radius: 5px;
+            padding: 15px;
+            display: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .filter-group {
+            margin-bottom: 10px;
+        }
+
+        .filter-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .filter-group input[type="number"],
+        .filter-group input[type="date"],
+        .filter-group input[type="text"] {
+            width: 100%;
+            padding: 5px;
+            border: 1px solid #cccccc;
+            border-radius: 3px;
+        }
+
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .radio-group label {
+            margin-bottom: 5px;
+        }
+
+        .float-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background-color: #007bff;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .float-button:hover {
+            background-color: #0056b3;
         }
     </style>
 </head>
@@ -38,21 +131,53 @@
 <body>
     <div class="container my-5">
         <h2 class="mb-4">交易记录与复盘分析</h2>
+        <!-- 浮动按钮 -->
+        <button class="float-button" onclick="toggleFilter()">筛选</button>
+
+        <!-- 筛选控件 -->
+        <div class="filter-container" id="filterContainer">
+            <div class="filter-group">
+                <label>最大仓位范围：</label>
+                <input type="number" id="amountMin" placeholder="最小值">
+                <span>~</span>
+                <input type="number" id="amountMax" placeholder="最大值">
+            </div>
+            <div class="filter-group">
+                <label>日期范围：</label>
+                <input type="date" id="dateMin">
+                <span>~</span>
+                <input type="date" id="dateMax">
+            </div>
+            <div class="filter-group">
+                <label>多空</label>
+                <div class="radio-group">
+                    <label><input type="radio" name="category" value="BUY"> BUY</label>
+                    <label><input type="radio" name="category" value="SELL"> SELL</label>
+                    <label><input type="radio" name="category" value="ALL" checked> 全部</label>
+                </div>
+            </div>
+            <div class="filter-group">
+                <label>标的：</label>
+                <input type="text" id="textFilter" placeholder="BTCUSDT">
+            </div>
+            <button onclick="filterTable()">提交</button>
+        </div>
+
         <div class="table-responsive">
-            <table class="table table-hover align-middle">
+            <table class="table table-hover align-middle" id="transactionTable">
                 <thead class="table-header">
                     <tr>
-                        <th>日期</th>
-                        <th>交易品种</th>
-                        <th>类型</th>
+                        <th onclick="sortTable(0)">日期</th>
+                        <th onclick="sortTable(1)">交易品种</th>
+                        <th onclick="sortTable(2)">类型</th>
                         <th>开仓价格</th>
                         <th>平仓价格</th>
-                        <th>开仓</th>
-                        <th>最大持仓</th>
-                        <th>持仓时间</th>
-                        <th>手续费</th>
-                        <th>盈亏</th>
-                        <th>幅度</th>
+                        <th onclick="sortTable(5)">开仓</th>
+                        <th onclick="sortTable(6)">最大持仓</th>
+                        <th onclick="sortTable(7)">持仓时间</th>
+                        <th onclick="sortTable(8)">手续费</th>
+                        <th onclick="sortTable(9)">盈亏</th>
+                        <th onclick="sortTable(10)">幅度</th>
                         <th>交易复盘</th>
                         <th>操作</th>
                     </tr>
@@ -88,20 +213,24 @@
 
     <script>
 
-        async function fetchTransactions() {
+        async function fetchTransactions(filterParams) {
+            const params = new URLSearchParams({
+                openSide: filterParams.openSide ? filterParams.openSide : "ALL",
+                symbol: filterParams.symbol ? filterParams.symbol : "ALL",
+                dateMin: filterParams.dateMin ? filterParams.dateMin : 0,
+                dateMax: filterParams.dateMax ? filterParams.dateMax : 0,
+                amountMin: filterParams.amountMin ? filterParams.amountMin : 0, 
+                amountMax: filterParams.amountMax ? filterParams.amountMax : 0, 
+            });
+            const url = `http://127.0.0.1:8080/getCombineOrderList?${params}`
             try {
-                const response = await fetch('http://127.0.0.1:8080/getCombineOrderList', {
+                const response = await fetch(url, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
                     },
-                    // 如需查询参数可添加：
-                    // params: new URLSearchParams({
-                    //     page: 1,
-                    //     per_page: 20,
-                    //     start_date: '2024-01-01'
-                    // })
+
                 });
 
                 // 处理HTTP错误状态
@@ -117,14 +246,14 @@
                 // 转换数据格式（根据实际API响应结构调整）
                 return data.message.map(item => ({
                     id: item.id,
-                    date: new Date(item.startTime).toISOString().split('T')[0],
+                    date: item.startTime,
                     symbol: item.symbol,
                     type: item.positionSide === 'LONG' ? '买入' : '卖出',
                     openPrice: parseFloat(item.openPrice),
                     closePrice: parseFloat(item.closePrice),
-                    quantity: parseFloat(item.firstOpenCumQuote),
-                    maxQuantity: parseFloat(item.maxCumQuote),
-                    profit: parseFloat(item.pnl),
+                    firstOpenCumQuote: parseFloat(item.firstOpenCumQuote),
+                    maxCumQuote: parseFloat(item.maxCumQuote),
+                    pnl: parseFloat(item.pnl),
                     review: item.comment || "暂无复盘记录",
                     startTime: item.startTime,
                     endTime: item.endTime,
@@ -145,20 +274,36 @@
             // 根据时间选择时间间隔
             let diff = (transaction.endTime - transaction.startTime) / 1000
             let interval = "1m"
+            let intervalSecond = 0
             if (diff < 60 * 60 * 1) { // 持仓时间1h内，用1m
                 interval = "1m";
+                intervalSecond = 60
             } else if (diff < 60 * 60 * 5) {  // 持仓时间5h内，用5m
                 interval = "5m";
+                intervalSecond = 60 * 5
             } else if (diff < 60 * 60 * 15) { // 持仓时间15h内，用15m
                 interval = "15m"
+                intervalSecond = 60 * 15
             } else if (diff < 60 * 60 * 60) { // 持仓时间60h内，用1h
                 interval = "1h"
+                intervalSecond = 60 * 60
             } else if (diff < 60 * 60 * 240) {// 持仓时间240h内，用4h
                 interval = "4h"
+                intervalSecond = 60 * 240
             }
+            let diffInterval = Math.round(diff / intervalSecond)
+
+
+
+            let startTime = transaction.startTime - 100 * 1000 * intervalSecond + 8 * 60 * 60 * 1000 // 有8个小时时差
+            console.log(transaction.symbol, "transaction.startTime", new Date(transaction.startTime).toISOString(), "startTime",
+                new Date(startTime).toISOString())
+
+            console.log("startTime", startTime)
+            let limit = 100 + diffInterval + 100
 
             let originOrders = transaction.originOrders
-            let bsHref = `<a target="_blank" href="chart.html?symbol=${transaction.symbol}&interval=${interval}&startTime=${transaction.startTime - 60 * 60 * 1000}`
+            let bsHref = `<a target="_blank" href="chart.html?symbol=${transaction.symbol}&interval=${interval}&startTime=${startTime}&limit=${limit}`
             bsHref += originOrders.map(item => `&${item.side == 'BUY' ? 'b' : 's'}=${item.time},${item.avgPrice}`).join('');
             bsHref += `">b/s</a>`
             return bsHref
@@ -184,21 +329,21 @@
             }
             let percent = (diff / transaction.openPrice) * 100
             percent = percent.toFixed(1);
-            if (transaction.profit > 0) {
+            if (transaction.pnl > 0) {
                 return percent
-            }else {
+            } else {
                 return -percent
             }
         }
 
         // 渲染表格数据
-        async function renderTable() {
-            const transactions = await fetchTransactions();
+        async function renderTable(transactions) {
+
             const tbody = document.getElementById('transactions');
 
             let count = 0
-            let totalCommission = 0 
-            let totalProfit = 0
+            let totalCommission = 0
+            let totalPnl = 0
             let totalTakeTime = 0
             let totalFirstOpenCumQuote = 0
             let totalMaxCumQuote = 0
@@ -209,13 +354,13 @@
             transactions.forEach(element => {
                 count += 1
                 totalCommission += element.commission
-                totalProfit += element.profit
+                totalPnl += element.pnl
                 totalTakeTime += element.endTime - element.startTime
-                totalFirstOpenCumQuote += element.quantity 
-                totalMaxCumQuote += element.maxQuantity
+                totalFirstOpenCumQuote += element.firstOpenCumQuote
+                totalMaxCumQuote += element.maxCumQuote
             });
 
-            avgTakeTime = totalTakeTime / count / 1000 / 60 
+            avgTakeTime = totalTakeTime / count / 1000 / 60
             avgFirstOpenCumQuote = totalFirstOpenCumQuote / count
             avgMaxCumQuote = totalMaxCumQuote / count
 
@@ -230,7 +375,7 @@
                     <td>${avgMaxCumQuote.toFixed(0)}</td>
                     <td>${avgTakeTime.toFixed(0)}分钟</td>
                     <td>${totalCommission.toFixed(2)}</td>
-                    <td>${totalProfit.toFixed(2)}</td>
+                    <td>${totalPnl.toFixed(2)}</td>
                     <td></td>
                     <td></td>
                     <td></td>
@@ -239,22 +384,22 @@
             `
             tbody.innerHTML += transactions.map(transaction => `
                 <tr data-id="${transaction.id}">
-                    <td>${transaction.date}</td>
+                    <td data-value="${transaction.date}">${new Date(transaction.date).toISOString().split('T')[0]}</td>
                     <td>${transaction.symbol}</td>
                     <td><span class="badge ${transaction.type === '买入' ? 'bg-success' : 'bg-danger'}">${transaction.type}</span></td>
                     <td>${transaction.openPrice}</td>
                     <td>${transaction.closePrice}</td>
-                    <td>${transaction.quantity.toFixed(0)}</td>
-                    <td>${transaction.maxQuantity.toFixed(0)}</td>
-                    <td>${getTakeTime(transaction)}</td>
+                    <td>${transaction.firstOpenCumQuote.toFixed(0)}</td>
+                    <td>${transaction.maxCumQuote.toFixed(0)}</td>
+                    <td data-value="${transaction.endTime - transaction.startTime}">${getTakeTime(transaction)}</td>
                     <td>${transaction.commission.toFixed(2)}</td>
-                    <td class="${transaction.profit >= 0 ? 'profit-positive' : 'profit-negative'}">
-                        ${transaction.profit >= 0 ? '+' : ''}${transaction.profit.toFixed(1)}
+                    <td class="${transaction.pnl >= 0 ? 'profit-positive' : 'profit-negative'}">
+                        ${transaction.pnl >= 0 ? '+' : ''}${transaction.pnl.toFixed(1)}
                     </td>
                     <td class="${getDiffPercent(transaction) >= 0 ? 'profit-positive' : 'profit-negative'}">
                         ${getDiffPercent(transaction)}%
                     </td>
-                    <td class="editable review-content">${transaction.review}</td>
+                    <td class="editable review-content" data-toggle="tooltip" title="${transaction.review}">${transaction.review}</td>
                     <td>
                         <button class="btn btn-sm btn-outline-primary edit-btn">编辑</button>
                         ${getBsHref(transaction)}
@@ -308,9 +453,108 @@
             });
         }
 
+        let sortOrder = {};
+
+        function sortTable(columnIndex) {
+            const table = document.getElementById("transactionTable");
+            const rows = Array.from(table.getElementsByTagName("tr")).slice(2); // 跳过表头
+            const isAscending = sortOrder[columnIndex] !== 1;
+
+            // 根据列内容排序
+            rows.sort((a, b) => {
+                let aValue = null
+                let bValue = null
+                if (a.cells[columnIndex].dataset.value) {
+                    aValue = a.cells[columnIndex].dataset.value;
+                    bValue = b.cells[columnIndex].dataset.value;
+                } else {
+                    aValue = a.cells[columnIndex].textContent.trim();
+                    bValue = b.cells[columnIndex].textContent.trim();
+                }
+
+                // 尝试将数字列转换为数字类型
+                const aNum = parseFloat(aValue);
+                const bNum = parseFloat(bValue);
+
+                if (!isNaN(aNum) && !isNaN(bNum)) {
+                    return isAscending ? aNum - bNum : bNum - aNum;
+                }
+
+                // 字符串比较
+                return isAscending
+                    ? aValue.localeCompare(bValue)
+                    : bValue.localeCompare(aValue);
+            });
+
+            // 重新排列表格行
+            const tbody = table.getElementsByTagName("tbody")[0];
+            rows.forEach(row => tbody.appendChild(row));
+
+            // 更新排序状态
+            sortOrder[columnIndex] = isAscending ? 1 : -1;
+
+            // 更新表头样式
+            const headers = table.getElementsByTagName("th");
+            Array.from(headers).forEach((header, index) => {
+                header.classList.remove("asc", "desc");
+                if (index === columnIndex) {
+                    header.classList.add(isAscending ? "asc" : "desc");
+                }
+            });
+        }
+
+        // 切换筛选控件的显示和隐藏
+        function toggleFilter() {
+            const filterContainer = document.getElementById('filterContainer');
+            if (filterContainer.style.display === 'block') {
+                filterContainer.style.display = 'none';
+            } else {
+                filterContainer.style.display = 'block';
+            }
+        }
+
+        // 点击表单外的位置隐藏筛选表单
+        document.addEventListener('click', function (event) {
+            const filterContainer = document.getElementById('filterContainer');
+            const floatButton = document.querySelector('.float-button');
+            if (!filterContainer.contains(event.target) && !floatButton.contains(event.target)) {
+                filterContainer.style.display = 'none';
+            }
+        });
+
+        async function filterTable() {
+            const amountMin = parseFloat(document.getElementById('amountMin').value) || 0;
+            const amountMax = parseFloat(document.getElementById('amountMax').value) || 0;
+            const dateMin = new Date(document.getElementById('dateMin').value).getTime() || 0;
+            const dateMax = new Date(document.getElementById('dateMax').value).getTime() || 0;
+            const openSide = document.querySelector('input[name="category"]:checked').value;
+            const symbol = document.getElementById('textFilter').value || "ALL";
+            const params = {
+                openSide: openSide,
+                symbol: symbol,
+                dateMin: dateMin,
+                dateMax: dateMax,
+                amountMin: amountMin,
+                amountMax : amountMax
+            }
+            console.log(params)
+            const transactions = await fetchTransactions(params);
+            await renderTable(transactions);
+            initEdit();
+        }
+
+        // // 为每个筛选控件添加事件监听
+        // document.getElementById('amountMin').addEventListener('input', filterTable);
+        // document.getElementById('amountMax').addEventListener('input', filterTable);
+        // document.getElementById('dateMin').addEventListener('input', filterTable);
+        // document.getElementById('dateMax').addEventListener('input', filterTable);
+        // document.querySelector('input[name="category"]').addEventListener('change', filterTable);
+        // document.getElementById('textFilter').addEventListener('input', filterTable);
+
         // 初始化
         (async function init() {
-            await renderTable();
+            const transactions = await fetchTransactions({});
+            await renderTable(transactions);
             initEdit();
         })();
     </script>

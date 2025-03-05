@@ -2,7 +2,8 @@
 <html>
 <head>
     <title>币安K线图表（支持多个B/S点）</title>
-    <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@3.8.0/dist/lightweight-charts.standalone.production.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@3.8.0/dist/lightweight-charts.standalone.production.js"></script> -->
+    <script src="lightweight-charts.standalone.production.js"></script>
     <style>
         #chart {
             width: 1200px;
@@ -32,6 +33,7 @@
             <option value="1d">1天</option>
         </select>
         <input type="datetime-local" id="startTime">
+        <input type="text" id="limit">
         <button onclick="loadChart()">加载图表</button>
         
         <hr>
@@ -60,7 +62,8 @@
                 interval: params.get('interval') || '1h',
                 startTime: params.get('startTime') || '',
                 buyPoints: params.getAll('b') || [], // 多个买入点
-                sellPoints: params.getAll('s') || []  // 多个卖出点
+                sellPoints: params.getAll('s') || [],  // 多个卖出点
+                limit:params.get('limit') || 100
             };
         }
 
@@ -69,6 +72,7 @@
             const params = getUrlParams();
             document.getElementById('symbol').value = params.symbol;
             document.getElementById('interval').value = params.interval;
+            document.getElementById('limit').value = params.limit;
 
             // 设置开始时间
             if (params.startTime) {
@@ -106,6 +110,7 @@
             const symbol = document.getElementById('symbol').value.toUpperCase();
             const interval = document.getElementById('interval').value;
             const startTime = new Date(document.getElementById('startTime').value).getTime();
+            const limit = document.getElementById('limit').value;
 
             if (!symbol || !interval) {
                 alert("请填写交易对和时间间隔");
@@ -114,7 +119,7 @@
 
             try {
                 // 构建请求URL
-                let url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=1000`;
+                let url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
                 if (startTime) {
                     url += `&startTime=${startTime}`;
                 }

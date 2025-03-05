@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"helptrade/dao"
 	"helptrade/global"
 	"net/http"
@@ -10,7 +11,14 @@ import (
 
 func GetCombineOrderList(c *gin.Context) {
 
-	list, _ := dao.QueryCombineOrder()
+	var req global.GetCombineOrderListReq
+	if err := c.ShouldBindQuery(&req); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	fmt.Println(req)
+
+	list, _ := dao.QueryCombineOrder(req)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": list,
