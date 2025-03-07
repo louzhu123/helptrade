@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"helptrade/dao"
 	"helptrade/global"
@@ -10,60 +11,150 @@ import (
 	"time"
 
 	"github.com/adshao/go-binance/v2"
+	"github.com/adshao/go-binance/v2/futures"
 )
 
 func FetchAndCombineOrder() {
-	UpdateAccountTrade()
+	FetchAndSaveAllAccountTrade()
 
-	UpdateOrder()
+	FetchAndSaveAllOrder()
 
 	list := CombineAccountOrder()
 	dao.UpsertCombineOrder(list)
 }
 
-func UpdateAccountTrade() {
+func FetchAllAccountTrade() ([]*futures.AccountTrade, error) {
 	futuresClient := binance.NewFuturesClient(global.Cfg.ApiKey, global.Cfg.SecretKey)
-	nowTime := time.Now()
-	for i := 0; i < 30; i++ {
-		endTime := nowTime.AddDate(0, 0, -3*i)
-		startTime := endTime.AddDate(0, 0, -3)
+	t := time.Now()
+	startTimeUnix := t.Unix()*1000 - 150*24*60*60*1000
+	endTimeUnix := startTimeUnix + 7*24*60*60*1000
+	maxTime := 1000 // 最多循环1000次应该获取完近90天的数据了
+	times := 0
+	endFlag := false
+
+	var allData []*futures.AccountTrade
+	for {
+		t1 := time.Unix(0, startTimeUnix*int64(time.Millisecond))
+		t1String := t1.Format("2006-01-02 15:04:05.000")
+		t2 := time.Unix(0, endTimeUnix*int64(time.Millisecond))
+		t2String := t2.Format("2006-01-02 15:04:05.000")
+		fmt.Println("fetch", times, t1String, t2String)
+
+		if endTimeUnix > time.Now().Unix()*1000 {
+			endTimeUnix = time.Now().Unix() * 1000
+			endFlag = true
+		}
+
+		times += 1
+		if times > maxTime {
+			return nil, errors.New("times too many")
+		}
 		res, err := futuresClient.NewListAccountTradeService().
-			StartTime(startTime.Unix() * 1000).EndTime(endTime.Unix() * 1000).Limit(1000).Do(context.Background())
+			StartTime(startTimeUnix).EndTime(endTimeUnix).Limit(1000).Do(context.Background())
+		fmt.Println("len(res)", len(res))
 		if err != nil {
+			fmt.Println(err)
 			if err.Error() == "<APIError> code=-4166, msg=Search window is restricted to recent 90 days only." {
-				fmt.Println(err)
+				break
 			} else {
-				// panic(err)
-			}
-		} else {
-			for _, v := range res {
-				dao.UpsertAccountTrade(v)
+				return nil, err
 			}
 		}
+
+		if len(res) > 0 {
+			startTimeUnix = res[len(res)-1].Time + 1
+			endTimeUnix = startTimeUnix + 7*24*60*60*1000
+		}
+		if len(res) == 0 {
+			startTimeUnix = endTimeUnix + 1
+			endTimeUnix = startTimeUnix + 7*24*60*60*1000
+		}
+		allData = append(allData, res...)
+
+		if endFlag {
+			break
+		}
+	}
+
+	return allData, nil
+}
+
+func FetchAndSaveAllAccountTrade() {
+	list, err := FetchAllAccountTrade()
+	if err != nil {
+		return
+	}
+
+	for _, v := range list {
+		dao.UpsertAccountTrade(v)
 	}
 }
 
-func UpdateOrder() {
+func FetchAllOrder() ([]*futures.Order, error) {
 	futuresClient := binance.NewFuturesClient(global.Cfg.ApiKey, global.Cfg.SecretKey)
-	nowTime := time.Now()
-	for i := 0; i < 30; i++ {
-		endTime := nowTime.AddDate(0, 0, -3*i)
-		startTime := endTime.AddDate(0, 0, -3)
+	t := time.Now()
+	startTimeUnix := t.Unix()*1000 - 90*24*60*60*1000 + 1000*10
+	endTimeUnix := startTimeUnix + 7*24*60*60*1000
+	maxTime := 1000 // 最多循环1000次应该获取完近90天的数据了
+	times := 0
+	endFlag := false
+
+	var allData []*futures.Order
+	for {
+		t1 := time.Unix(0, startTimeUnix*int64(time.Millisecond))
+		t1String := t1.Format("2006-01-02 15:04:05.000")
+		t2 := time.Unix(0, endTimeUnix*int64(time.Millisecond))
+		t2String := t2.Format("2006-01-02 15:04:05.000")
+		fmt.Println("fetch", times, t1String, t2String)
+
+		if endTimeUnix > time.Now().Unix()*1000 {
+			endTimeUnix = time.Now().Unix() * 1000
+			endFlag = true
+		}
+
+		times += 1
+		if times > maxTime {
+			return nil, errors.New("times too many")
+		}
 		res, err := futuresClient.NewListOrdersService().
-			StartTime(startTime.Unix() * 1000).EndTime(endTime.Unix() * 1000).Limit(1000).Do(context.Background())
+			StartTime(startTimeUnix).EndTime(endTimeUnix).Limit(1000).Do(context.Background())
+		fmt.Println("len(res)", len(res))
 		if err != nil {
+			fmt.Println(err)
 			if err.Error() == "<APIError> code=-4166, msg=Search window is restricted to recent 90 days only." {
-				fmt.Println(err)
+				break
 			} else {
-				// panic(err)
+				return nil, err
 			}
-		} else {
-			for _, v := range res {
-				dao.UpsertOrder(v)
-			}
+		}
+
+		if len(res) > 0 {
+			startTimeUnix = res[len(res)-1].Time + 1
+			endTimeUnix = startTimeUnix + 7*24*60*60*1000
+		}
+		if len(res) == 0 {
+			startTimeUnix = endTimeUnix + 1
+			endTimeUnix = startTimeUnix + 7*24*60*60*1000
+		}
+		allData = append(allData, res...)
+
+		if endFlag {
+			break
 		}
 	}
 
+	return allData, nil
+}
+
+func FetchAndSaveAllOrder() {
+	list, err := FetchAllOrder()
+	if err != nil {
+		return
+	}
+
+	for _, v := range list {
+		dao.UpsertOrder(v)
+	}
 }
 
 type TmpCombineOrder struct {
