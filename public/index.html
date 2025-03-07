@@ -241,7 +241,6 @@
 
                 // 解析JSON数据
                 const data = await response.json();
-                console.log(data)
 
                 // 转换数据格式（根据实际API响应结构调整）
                 return data.message.map(item => ({
@@ -296,10 +295,6 @@
 
 
             let startTime = transaction.startTime - 100 * 1000 * intervalSecond + 8 * 60 * 60 * 1000 // 有8个小时时差
-            console.log(transaction.symbol, "transaction.startTime", new Date(transaction.startTime).toISOString(), "startTime",
-                new Date(startTime).toISOString())
-
-            console.log("startTime", startTime)
             let limit = 100 + diffInterval + 100
 
             let originOrders = transaction.originOrders
@@ -350,6 +345,15 @@
             let avgTakeTime = 0
             let avgFirstOpenCumQuote = 0
             let avgMaxCumQuote = 0
+            let win = 0
+            let loss = 0
+            let winTimes = 0
+            let lossTimes = 0
+            let winRate = 0
+            let totalWinPersent = 0
+            let totalLossPersent = 0
+            let avgWinLossRate = 0
+            
 
             transactions.forEach(element => {
                 count += 1
@@ -358,11 +362,26 @@
                 totalTakeTime += element.endTime - element.startTime
                 totalFirstOpenCumQuote += element.firstOpenCumQuote
                 totalMaxCumQuote += element.maxCumQuote
+                if (element.pnl > 0) {
+                     win += element.pnl
+                     winTimes += 1
+                }
+                if (element.pnl < 0) {
+                    loss += element.pnl
+                    lossTimes += 1
+                }
+                let persent = getDiffPercent(element)
+                if (persent >  0) totalWinPersent += Number(getDiffPercent(element))
+                if (persent < 0) totalLossPersent += Number(getDiffPercent(element))
             });
+
+            winRate = winTimes / transactions.length
+            avgWinLossRate = (totalWinPersent / winTimes) / (-1 * totalLossPersent / lossTimes)
 
             avgTakeTime = totalTakeTime / count / 1000 / 60
             avgFirstOpenCumQuote = totalFirstOpenCumQuote / count
             avgMaxCumQuote = totalMaxCumQuote / count
+            
 
             tbody.innerHTML = `
                 <tr>
@@ -375,8 +394,8 @@
                     <td>${avgMaxCumQuote.toFixed(0)}</td>
                     <td>${avgTakeTime.toFixed(0)}分钟</td>
                     <td>${totalCommission.toFixed(2)}</td>
-                    <td>${totalPnl.toFixed(2)}</td>
-                    <td></td>
+                    <td>净盈亏:${totalPnl.toFixed(2)} <br> 总盈利:${win.toFixed(0)} <br> 总亏损:${loss.toFixed(0)}</td>
+                    <td>胜率:${winRate.toFixed(2)} <br> 平均盈亏比:${avgWinLossRate.toFixed(2)}</td>
                     <td></td>
                     <td></td>
                     <td></td>
@@ -537,19 +556,10 @@
                 amountMin: amountMin,
                 amountMax : amountMax
             }
-            console.log(params)
             const transactions = await fetchTransactions(params);
             await renderTable(transactions);
             initEdit();
         }
-
-        // // 为每个筛选控件添加事件监听
-        // document.getElementById('amountMin').addEventListener('input', filterTable);
-        // document.getElementById('amountMax').addEventListener('input', filterTable);
-        // document.getElementById('dateMin').addEventListener('input', filterTable);
-        // document.getElementById('dateMax').addEventListener('input', filterTable);
-        // document.querySelector('input[name="category"]').addEventListener('change', filterTable);
-        // document.getElementById('textFilter').addEventListener('input', filterTable);
 
         // 初始化
         (async function init() {

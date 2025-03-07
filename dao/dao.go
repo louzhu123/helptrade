@@ -56,9 +56,21 @@ func GetTotalCommissionByOrderId(orderId int64) float64 {
 	}
 }
 
+func GetTotalPnlByOrderId(orderId int64) float64 {
+	var data []float64
+	global.DB.Model(AccountTrade{}).Select("sum(realizedPnl) as realizedPnl").
+		Where("orderId", orderId).Pluck("realizedPnl", &data)
+
+	if len(data) > 0 {
+		return data[0]
+	} else {
+		return 0
+	}
+}
+
 func GetAllOrder() ([]Order, error) {
 	list := make([]Order, 0)
-	err := global.DB.Model(Order{}).Find(&list).Order("time asc").Error
+	err := global.DB.Model(Order{}).Order("time asc").Find(&list).Error
 	return list, err
 }
 

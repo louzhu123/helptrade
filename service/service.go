@@ -23,24 +23,47 @@ func FetchAndCombineOrder() {
 
 func UpdateAccountTrade() {
 	futuresClient := binance.NewFuturesClient(global.Cfg.ApiKey, global.Cfg.SecretKey)
-	res, err := futuresClient.NewListAccountTradeService().Do(context.Background())
-	if err != nil {
-		fmt.Println(err)
-	}
-	for _, v := range res {
-		dao.UpsertAccountTrade(v)
+	nowTime := time.Now()
+	for i := 0; i < 30; i++ {
+		endTime := nowTime.AddDate(0, 0, -3*i)
+		startTime := endTime.AddDate(0, 0, -3)
+		res, err := futuresClient.NewListAccountTradeService().
+			StartTime(startTime.Unix() * 1000).EndTime(endTime.Unix() * 1000).Limit(1000).Do(context.Background())
+		if err != nil {
+			if err.Error() == "<APIError> code=-4166, msg=Search window is restricted to recent 90 days only." {
+				fmt.Println(err)
+			} else {
+				// panic(err)
+			}
+		} else {
+			for _, v := range res {
+				dao.UpsertAccountTrade(v)
+			}
+		}
 	}
 }
 
 func UpdateOrder() {
 	futuresClient := binance.NewFuturesClient(global.Cfg.ApiKey, global.Cfg.SecretKey)
-	res, err := futuresClient.NewListOrdersService().Do(context.Background())
-	if err != nil {
-		fmt.Println(err)
+	nowTime := time.Now()
+	for i := 0; i < 30; i++ {
+		endTime := nowTime.AddDate(0, 0, -3*i)
+		startTime := endTime.AddDate(0, 0, -3)
+		res, err := futuresClient.NewListOrdersService().
+			StartTime(startTime.Unix() * 1000).EndTime(endTime.Unix() * 1000).Limit(1000).Do(context.Background())
+		if err != nil {
+			if err.Error() == "<APIError> code=-4166, msg=Search window is restricted to recent 90 days only." {
+				fmt.Println(err)
+			} else {
+				// panic(err)
+			}
+		} else {
+			for _, v := range res {
+				dao.UpsertOrder(v)
+			}
+		}
 	}
-	for _, v := range res {
-		dao.UpsertOrder(v)
-	}
+
 }
 
 type TmpCombineOrder struct {
@@ -62,10 +85,11 @@ func CombineAccountOrder() []dao.CombineOrder {
 
 	for _, v := range list {
 		endFlag := false
-		executedQtyFloat, _ := strconv.ParseFloat(v.ExecutedQty, 64)
+		executedQtyFloat, _ := strconv.ParseFloat(v.ExecutedQty, 64) // 有的标的数量是带一个小数点的，避免浮点数计算问题
+		executedQtyFloat100 := executedQtyFloat * 100
 		cumQuoteFloat, _ := strconv.ParseFloat(v.CumQuote, 64)
 		avgPriceFloat, _ := strconv.ParseFloat(v.AvgPrice, 64)
-		if executedQtyFloat == 0 { // 无效订单，开了没执行的后面关了的
+		if executedQtyFloat100 == 0 { // 无效订单，开了没执行的后面关了的
 			continue
 		}
 
@@ -78,6 +102,9 @@ func CombineAccountOrder() []dao.CombineOrder {
 		commission := dao.GetTotalCommissionByOrderId(v.OrderId)
 		tmpOrder.Order.Commission += commission
 
+		totalPnl := dao.GetTotalPnlByOrderId(v.OrderId)
+		tmpOrder.Order.PnL += totalPnl
+
 		if tmpOrder.CurrentPostion == 0 { // 新开仓
 			tmpOrder.Order.StartTime = v.Time
 			tmpOrder.Order.PositionSide = v.PositionSide
@@ -85,18 +112,18 @@ func CombineAccountOrder() []dao.CombineOrder {
 			tmpOrder.Order.Symbol = v.Symbol
 			tmpOrder.Order.OpenPrice = avgPriceFloat
 			tmpOrder.Order.FirstOpenCumQuote = cumQuoteFloat
-		} else if v.Side != tmpOrder.Order.Side && executedQtyFloat-tmpOrder.CurrentPostion == 0 { //结束
+		} else if v.Side != tmpOrder.Order.Side && executedQtyFloat100-tmpOrder.CurrentPostion == 0 { //结束
 			endFlag = true
 			tmpOrder.Order.EndTime = v.Time
 			tmpOrder.Order.ClosePrice = avgPriceFloat
 		}
 
 		if v.Side == tmpOrder.Order.Side {
-			tmpOrder.CurrentPostion += executedQtyFloat
+			tmpOrder.CurrentPostion += executedQtyFloat100
 			tmpOrder.CurrentCumQuote += cumQuoteFloat
 			tmpOrder.Order.TotalOpenCumQuote += cumQuoteFloat
 		} else {
-			tmpOrder.CurrentPostion -= executedQtyFloat
+			tmpOrder.CurrentPostion -= executedQtyFloat100
 			tmpOrder.CurrentCumQuote -= cumQuoteFloat
 			tmpOrder.Order.TotalCloseCumQuote += cumQuoteFloat
 		}
@@ -108,14 +135,16 @@ func CombineAccountOrder() []dao.CombineOrder {
 
 		tmpCombineOrder[v.Symbol] = tmpOrder
 
+		fmt.Println(tmpOrder.CurrentPostion)
+
 		if endFlag {
-			diff := tmpOrder.Order.TotalCloseCumQuote - tmpOrder.Order.TotalOpenCumQuote
-			tmpOrder.Order.PnL = diff
-			if tmpOrder.Order.Side == "BUY" {
-				tmpOrder.Order.PnL = diff
-			} else {
-				tmpOrder.Order.PnL = -diff
-			}
+			// diff := tmpOrder.Order.TotalCloseCumQuote - tmpOrder.Order.TotalOpenCumQuote
+			// tmpOrder.Order.PnL = diff
+			// if tmpOrder.Order.Side == "BUY" {
+			// 	tmpOrder.Order.PnL = diff
+			// } else {
+			// 	tmpOrder.Order.PnL = -diff
+			// }
 			if tmpOrder.Order.MaxCumQuote < tmpOrder.Order.TotalCloseCumQuote {
 				tmpOrder.Order.MaxCumQuote = tmpOrder.Order.TotalCloseCumQuote
 			}
