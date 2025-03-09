@@ -5,9 +5,7 @@ import (
 	Config "helptrade/config"
 	"helptrade/controller"
 	"helptrade/global"
-	"helptrade/service"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-ini/ini"
@@ -60,12 +58,16 @@ func CORSMiddleware() gin.HandlerFunc {
 }
 
 func main() {
-	go func() {
-		for {
-			service.FetchAndCombineOrder()
-			time.Sleep(15 * time.Minute)
-		}
-	}()
+	// service.FetchAndSaveAllAccountTrade()
+	// list := service.CombineAccountTrade()
+	// dao.SaveCombineOrder(list)
+	// return
+	// go func() {
+	// 	for {
+	// 		service.FetchAndCombineOrder()
+	// 		time.Sleep(15 * time.Minute)
+	// 	}
+	// }()
 
 	r := gin.Default()
 	r.Use(CORSMiddleware())

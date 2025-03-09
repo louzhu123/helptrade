@@ -74,6 +74,15 @@ func GetAllOrder() ([]Order, error) {
 	return list, err
 }
 
+func GetAllAccountTrade() ([]AccountTrade, error) {
+	list := make([]AccountTrade, 0)
+	err := global.DB.Model(AccountTrade{}).
+		// Order("time asc").Find(&list).Error
+		Select("orderId,min(time) as time,sum(commission) as commission,sum(qty) as qty,sum(quoteQty) as quoteQty,sum(realizedPnl) as realizedPnl,avg(price) as price,MIN(symbol) as symbol,MIN(side) as side,MIN(positionSide) as positionSide").
+		Group("orderId").Order("time asc").Find(&list).Error
+	return list, err
+}
+
 func SaveCombineOrder(list []CombineOrder) error {
 	err := global.DB.Model(CombineOrder{}).Save(list).Error
 	return err

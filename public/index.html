@@ -353,6 +353,7 @@
             let totalWinPersent = 0
             let totalLossPersent = 0
             let avgWinLossRate = 0
+            let avgLoss = 0
             
 
             transactions.forEach(element => {
@@ -377,6 +378,7 @@
 
             winRate = winTimes / transactions.length
             avgWinLossRate = (totalWinPersent / winTimes) / (-1 * totalLossPersent / lossTimes)
+            avgLoss = loss / lossTimes
 
             avgTakeTime = totalTakeTime / count / 1000 / 60
             avgFirstOpenCumQuote = totalFirstOpenCumQuote / count
@@ -393,9 +395,9 @@
                     <td>${avgFirstOpenCumQuote.toFixed(0)}</td>
                     <td>${avgMaxCumQuote.toFixed(0)}</td>
                     <td>${avgTakeTime.toFixed(0)}分钟</td>
-                    <td>${totalCommission.toFixed(2)}</td>
-                    <td>净盈亏:${totalPnl.toFixed(2)} <br> 总盈利:${win.toFixed(0)} <br> 总亏损:${loss.toFixed(0)}</td>
-                    <td>胜率:${winRate.toFixed(2)} <br> 平均盈亏比:${avgWinLossRate.toFixed(2)}</td>
+                    <td>总笔数:${transactions.length}<br>${totalCommission.toFixed(2)}</td>
+                    <td>净盈亏:${totalPnl.toFixed(2)} <br> 总盈利:${win.toFixed(0)} <br> 总亏损:${loss.toFixed(0)} <br> 平均亏损:${avgLoss.toFixed(0)} <br> 估算平均止损设置:${avgLoss.toFixed(0) * 3}</td>
+                    <td>胜率:${winRate.toFixed(2)} <br> 平均盈亏比:${avgWinLossRate.toFixed(2)} <br> 期望值:${(winRate*avgWinLossRate -(1-winRate)).toFixed(3)}</td>
                     <td></td>
                     <td></td>
                     <td></td>

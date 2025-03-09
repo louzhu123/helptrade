@@ -12,6 +12,7 @@ import (
 
 	"github.com/adshao/go-binance/v2"
 	"github.com/adshao/go-binance/v2/futures"
+	"github.com/shopspring/decimal"
 )
 
 func FetchAndCombineOrder() {
@@ -26,11 +27,12 @@ func FetchAndCombineOrder() {
 func FetchAllAccountTrade() ([]*futures.AccountTrade, error) {
 	futuresClient := binance.NewFuturesClient(global.Cfg.ApiKey, global.Cfg.SecretKey)
 	t := time.Now()
-	startTimeUnix := t.Unix()*1000 - 150*24*60*60*1000
+	startTimeUnix := t.Unix()*1000 - 500*24*60*60*1000
 	endTimeUnix := startTimeUnix + 7*24*60*60*1000
 	maxTime := 1000 // 最多循环1000次应该获取完近90天的数据了
 	times := 0
 	endFlag := false
+	lastTimeStamp := int64(0)
 
 	var allData []*futures.AccountTrade
 	for {
@@ -62,11 +64,19 @@ func FetchAllAccountTrade() ([]*futures.AccountTrade, error) {
 		}
 
 		if len(res) > 0 {
-			startTimeUnix = res[len(res)-1].Time + 1
-			endTimeUnix = startTimeUnix + 7*24*60*60*1000
+			if lastTimeStamp == res[len(res)-1].Time {
+				// 死循环了，跳过
+				startTimeUnix = endTimeUnix - 1000*100
+				endTimeUnix = startTimeUnix + 7*24*60*60*1000
+			} else {
+				startTimeUnix = res[len(res)-1].Time - 1000*100
+				endTimeUnix = startTimeUnix + 7*24*60*60*1000
+			}
+
+			lastTimeStamp = res[len(res)-1].Time
 		}
-		if len(res) == 0 {
-			startTimeUnix = endTimeUnix + 1
+		if len(res) == 0 { // 可能这些数据都在1秒钟发生就会导致会死循环
+			startTimeUnix = endTimeUnix - 1000*100
 			endTimeUnix = startTimeUnix + 7*24*60*60*1000
 		}
 		allData = append(allData, res...)
@@ -80,7 +90,7 @@ func FetchAllAccountTrade() ([]*futures.AccountTrade, error) {
 }
 
 func FetchAndSaveAllAccountTrade() {
-	list, err := FetchAllAccountTrade()
+	list, err := FetchAllAccountTrade() // 数据会重复，为了能获取完整，时间窗口会有重叠
 	if err != nil {
 		return
 	}
@@ -117,7 +127,7 @@ func FetchAllOrder() ([]*futures.Order, error) {
 			return nil, errors.New("times too many")
 		}
 		res, err := futuresClient.NewListOrdersService().
-			StartTime(startTimeUnix).EndTime(endTimeUnix).Limit(1000).Do(context.Background())
+			StartTime(startTimeUnix).EndTime(endTimeUnix).Limit(10000).Do(context.Background())
 		fmt.Println("len(res)", len(res))
 		if err != nil {
 			fmt.Println(err)
@@ -251,6 +261,116 @@ func CombineAccountOrder() []dao.CombineOrder {
 		t := time.UnixMilli(v.StartTime).Format("2006-01-02 15:04:05")
 		fmt.Printf("%v %v %v pnl:%.2f \n", t, v.Side, v.Symbol, v.PnL)
 	}
+
+	return combineOrderList
+}
+
+type TmpCombineAccountTrade struct {
+	CurrentPostion  decimal.Decimal
+	CurrentCumQuote float64
+	OriginOrders    []dao.AccountTrade
+	Order           dao.CombineOrder
+}
+
+func CombineAccountTrade() []dao.CombineOrder {
+
+	// 仓位状态
+	tmpCombineOrder := make(map[string]TmpCombineAccountTrade, 0)
+
+	// 合并数据
+	combineOrderList := make([]dao.CombineOrder, 0)
+
+	list, _ := dao.GetAllAccountTrade()
+	// fmt.Println(len(list))
+
+	for _, v := range list {
+		endFlag := false
+		fmt.Println("当前accountrade", v.Qty)
+		// executedQtyFloat, _ := strconv.ParseFloat(v.Qty, 64) // 有的标的数量是带一个小数点的，避免浮点数计算问
+		// executedQtyFloat100 := executedQtyFloat * 100
+		executedQtyDecimal, _ := decimal.NewFromString(v.Qty)
+		executedQtyFloat, _ := executedQtyDecimal.Float64()
+
+		commissionFloat, _ := strconv.ParseFloat(v.Commission, 64)
+		pnl, _ := strconv.ParseFloat(v.RealizedPnl, 64)
+
+		cumQuoteFloat, _ := strconv.ParseFloat(v.QuoteQty, 64)
+		avgPriceFloat, _ := strconv.ParseFloat(v.Price, 64)
+		if executedQtyFloat == 0 { // 无效订单，开了没执行的后面关了的
+			continue
+		}
+
+		if _, ok := tmpCombineOrder[v.Symbol]; !ok {
+			tmpCombineOrder[v.Symbol] = TmpCombineAccountTrade{}
+		}
+		tmpOrder := tmpCombineOrder[v.Symbol]
+
+		currentPostionFloat, _ := tmpOrder.CurrentPostion.Float64()
+
+		// fmt.Println(tmpOrder.CurrentPostion)
+
+		tmpOrder.Order.Commission += commissionFloat
+		tmpOrder.Order.PnL += pnl
+
+		subResult, _ := executedQtyDecimal.Sub(tmpOrder.CurrentPostion).Float64()
+
+		if currentPostionFloat == 0 { // 新开仓
+			fmt.Println("新开仓")
+			tmpOrder.Order.StartTime = v.Time
+			tmpOrder.Order.PositionSide = v.PositionSide
+			tmpOrder.Order.Side = v.Side
+			tmpOrder.Order.Symbol = v.Symbol
+			tmpOrder.Order.OpenPrice = avgPriceFloat
+			tmpOrder.Order.FirstOpenCumQuote = cumQuoteFloat
+		} else if v.Side != tmpOrder.Order.Side && subResult == 0 { //结束
+			endFlag = true
+			tmpOrder.Order.EndTime = v.Time
+			tmpOrder.Order.ClosePrice = avgPriceFloat
+		}
+
+		if v.Side == tmpOrder.Order.Side {
+			tmpOrder.CurrentPostion = tmpOrder.CurrentPostion.Add(executedQtyDecimal)
+			tmpOrder.CurrentCumQuote += cumQuoteFloat
+			tmpOrder.Order.TotalOpenCumQuote += cumQuoteFloat
+		} else {
+			tmpOrder.CurrentPostion = tmpOrder.CurrentPostion.Sub(executedQtyDecimal)
+			tmpOrder.CurrentCumQuote -= cumQuoteFloat
+			tmpOrder.Order.TotalCloseCumQuote += cumQuoteFloat
+		}
+
+		fmt.Println("当前仓位", tmpOrder.CurrentPostion)
+		if tmpOrder.CurrentCumQuote > tmpOrder.Order.MaxCumQuote {
+			tmpOrder.Order.MaxCumQuote = tmpOrder.CurrentCumQuote
+		}
+
+		tmpOrder.OriginOrders = append(tmpOrder.OriginOrders, v)
+
+		tmpCombineOrder[v.Symbol] = tmpOrder
+
+		if endFlag {
+			fmt.Println("平仓所有\n\n\n\n")
+			// diff := tmpOrder.Order.TotalCloseCumQuote - tmpOrder.Order.TotalOpenCumQuote
+			// tmpOrder.Order.PnL = diff
+			// if tmpOrder.Order.Side == "BUY" {
+			// 	tmpOrder.Order.PnL = diff
+			// } else {
+			// 	tmpOrder.Order.PnL = -diff
+			// }
+			if tmpOrder.Order.MaxCumQuote < tmpOrder.Order.TotalCloseCumQuote {
+				tmpOrder.Order.MaxCumQuote = tmpOrder.Order.TotalCloseCumQuote
+			}
+
+			originOrdersStr, _ := json.Marshal(tmpOrder.OriginOrders)
+			tmpOrder.Order.OriginOrders = string(originOrdersStr)
+			combineOrderList = append(combineOrderList, tmpOrder.Order)
+			tmpCombineOrder[v.Symbol] = TmpCombineAccountTrade{}
+		}
+	}
+
+	// for _, v := range combineOrderList {
+	// 	t := time.UnixMilli(v.StartTime).Format("2006-01-02 15:04:05")
+	// 	fmt.Printf("%v %v %v pnl:%.2f \n", t, v.Side, v.Symbol, v.PnL)
+	// }
 
 	return combineOrderList
 }
