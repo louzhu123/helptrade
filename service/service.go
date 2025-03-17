@@ -421,5 +421,6 @@ func SavePlan(req global.SavePlanReq) error {
 }
 
 func DelPlan(req global.DelPlanReq) error {
-
+	dao.
+	return nil
 }

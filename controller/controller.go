@@ -69,7 +69,7 @@ func SavePlan(c *gin.Context) {
 }
 
 func DelPlan(c *gin.Context) {
-	var req global.SavePlanReq
+	var req global.DelPlanReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
