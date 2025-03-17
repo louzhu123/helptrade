@@ -76,6 +76,7 @@ func main() {
 
 	r.GET("/getPlanList", controller.GetPlanList)
 	r.POST("/savePlan", controller.SavePlan)
+	r.POST("/delPlan", controller.de)
 
 	r.Run()
 }
