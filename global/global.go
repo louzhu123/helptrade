@@ -8,3 +8,5 @@ import (
 
 var Cfg *Config.Config
 var DB *gorm.DB
+
+const MiaoNoticeId = "tybPSK4"

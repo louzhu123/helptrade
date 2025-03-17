@@ -3,6 +3,7 @@ module helptrade
 go 1.22.1
 
 require (
+	common v0.0.0-00010101000000-000000000000
 	github.com/adshao/go-binance/v2 v2.8.0
 	github.com/gin-gonic/gin v1.10.0
 	github.com/go-ini/ini v1.67.0
@@ -47,3 +48,5 @@ require (
 	google.golang.org/protobuf v1.34.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace common => ../common

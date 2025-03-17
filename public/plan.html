@@ -186,17 +186,24 @@
 
             const openPrice = element.openPrice
             const id = element.id
+            const notice = element.notice
+            const symbol = element.symbol
+            const positionSide = element.positionSide
+            let longSelected = ""
+            let shortSelected = ""
+            if (positionSide == "LONG")  longSelected = "selected"
+            if (positionSide == "SHORT") shortSelected = "selected"
 
             newRow.innerHTML = `
                         <td><label class="id">${id}</label></td>
                         <td>
-                            <input type="text" class="autocomplete symbol">
+                            <input type="text" class="autocomplete symbol" value="${symbol}">
                             <div class="autocomplete-list" class="autocomplete-items"></div>
                         </td>
                         <td>
                             <select>
-                                <option> 买入 </option>
-                                <option> 卖出 </option>
+                                <option class="long" ${longSelected}> 买入 </option>
+                                <option class="short" ${shortSelected}> 卖出 </option>
                             </select>
                         </td>
                         <td>
@@ -222,11 +229,11 @@
                         <td>
                             <div class="checkbox-group">
                                 <div class="checkbox-item">
-                                    <input type="checkbox" name="option1" value="notice">
+                                    <input type="checkbox" class="notice" checked="${notice}">
                                     <label>价格提醒</label>
                                 </div>
                                 <div class="checkbox-item">
-                                    <input type="checkbox" name="option2" value="auto-trade">
+                                    <input type="checkbox" class="autoTrade" value="autoTrade">
                                     <label>自动交易</label>
                                 </div>
                             </div>
@@ -263,6 +270,8 @@
                 const openPrice = row.querySelector('.openPrice').value;
                 const id = row.querySelector('.id').innerHTML
                 const symbol = row.querySelector('.symbol').value
+                const notice = row.querySelector('.notice').checked ? 1 : 0
+                const positionSide = row.querySelector('.long').selected ? "LONG":"SHORT"
 
                 try {
                     await fetch('http://127.0.0.1:8080/savePlan', {
@@ -270,7 +279,13 @@
                         headers: {
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify({ id: Number(id), symbol: symbol,openPrice:openPrice})
+                        body: JSON.stringify({ 
+                            id: Number(id), 
+                            symbol: symbol, 
+                            openPrice: openPrice,
+                            notice: notice,
+                            positionSide: positionSide,
+                        })
                     });
 
                     alert('保存成功');
@@ -374,6 +389,7 @@
                     notice: item.notice,
                     autoTrade: item.autoTrade,
                     createTime: item.createTime,
+                    positionSide: item.positionSide,
                 }));
 
             } catch (error) {

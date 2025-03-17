@@ -75,7 +75,7 @@ func DelPlan(c *gin.Context) {
 		return
 	}
 
-	service.SavePlan(req)
+	service.DelPlan(req)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "ok",

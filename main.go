@@ -5,7 +5,10 @@ import (
 	Config "helptrade/config"
 	"helptrade/controller"
 	"helptrade/global"
+	"helptrade/service"
+	"log"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-ini/ini"
@@ -68,6 +71,13 @@ func main() {
 	// 		time.Sleep(15 * time.Minute)
 	// 	}
 	// }()
+	go func() {
+		for {
+			log.Println("doPlan")
+			service.DoPlan()
+			time.Sleep(5 * time.Second)
+		}
+	}()
 
 	r := gin.Default()
 	r.Use(CORSMiddleware())
@@ -76,7 +86,7 @@ func main() {
 
 	r.GET("/getPlanList", controller.GetPlanList)
 	r.POST("/savePlan", controller.SavePlan)
-	r.POST("/delPlan", controller.de)
+	r.POST("/delPlan", controller.DelPlan)
 
 	r.Run()
 }

@@ -380,14 +380,15 @@ func GetPlanList() ([]global.GetPlanListResPlan, error) {
 	list, err := dao.GetAllPlan()
 	for _, item := range list {
 		tmp := global.GetPlanListResPlan{
-			Id:         item.Id,
-			Symbol:     item.Symbol,
-			OpenPrice:  item.OpenPrice,
-			LossPrice:  item.LossPrice,
-			WinPrice:   item.LossPrice,
-			Notice:     item.Notice,
-			AutoTrade:  item.AutoTrade,
-			CreateTime: item.CreateTime.Unix(),
+			Id:           item.Id,
+			Symbol:       item.Symbol,
+			OpenPrice:    item.OpenPrice,
+			LossPrice:    item.LossPrice,
+			WinPrice:     item.LossPrice,
+			Notice:       item.Notice,
+			AutoTrade:    item.AutoTrade,
+			PositionSide: item.PositionSide,
+			CreateTime:   item.CreateTime.Unix(),
 		}
 		res = append(res, tmp)
 	}
@@ -405,13 +406,17 @@ func SavePlan(req global.SavePlanReq) error {
 		}
 		data.OpenPrice = req.OpenPrice
 		data.Symbol = req.Symbol
+		data.Notice = req.Notice
+		data.PositionSide = req.PositionSide
 		dao.SavePlan(data)
 	} else { // 新增
 		data := dao.Plan{
-			Symbol:     req.Symbol,
-			OpenPrice:  req.OpenPrice,
-			CreateTime: time.Now(),
-			UpdateTime: time.Now(),
+			Symbol:       req.Symbol,
+			OpenPrice:    req.OpenPrice,
+			Notice:       req.Notice,
+			PositionSide: req.PositionSide,
+			CreateTime:   time.Now(),
+			UpdateTime:   time.Now(),
 		}
 		err := dao.CreatePlan(&data)
 		return err
@@ -421,6 +426,6 @@ func SavePlan(req global.SavePlanReq) error {
 }
 
 func DelPlan(req global.DelPlanReq) error {
-	dao.
+	dao.DelPlan(req.Id)
 	return nil
 }

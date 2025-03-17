@@ -81,15 +81,17 @@ func (CombineOrder) TableName() string {
 }
 
 type Plan struct {
-	Id         int64     `json:"id" gorm:"column:id"`
-	Symbol     string    `json:"symbol"`
-	OpenPrice  string    `json:"openPrice" gorm:"column:openPrice"`
-	LossPrice  string    `json:"lossPrice" gorm:"column:lossPrice"`
-	WinPrice   string    `json:"winPrice" gorm:"column:winPrice"`
-	Notice     int       `json:"notice" gorm:"column:notice"`
-	AutoTrade  int       `json:"autoTrade" gorm:"column:autoTrade"`
-	CreateTime time.Time `json:"createTime" gorm:"column:createTime"`
-	UpdateTime time.Time `json:"updateTime" gorm:"column:updateTime"`
+	Id           int64     `json:"id" gorm:"column:id"`
+	Symbol       string    `json:"symbol"`
+	OpenPrice    string    `json:"openPrice" gorm:"column:openPrice"`
+	LossPrice    string    `json:"lossPrice" gorm:"column:lossPrice"`
+	WinPrice     string    `json:"winPrice" gorm:"column:winPrice"`
+	Notice       int       `json:"notice" gorm:"column:notice"`
+	AutoTrade    int       `json:"autoTrade" gorm:"column:autoTrade"`
+	CreateTime   time.Time `json:"createTime" gorm:"column:createTime"`
+	UpdateTime   time.Time `json:"updateTime" gorm:"column:updateTime"`
+	Status       int       `json:"status" gorm:"column:status"`
+	PositionSide string    `json:"positionSide" gorm:"column:positionSide"`
 }
 
 func (Plan) TableName() string {

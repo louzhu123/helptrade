@@ -142,5 +142,9 @@ func CreatePlan(data *Plan) error {
 }
 
 func DelPlan(id int64) error {
-	return global.DB.Model(Plan{}).Where("id", id).Delete()
+	return global.DB.Where("id", id).Delete(&Plan{}).Error
+}
+
+func DonePlan(id int64) error {
+	return global.DB.Model(Plan{}).Where("id", id).Update("status", 1).Error
 }
