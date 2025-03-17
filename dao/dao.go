@@ -120,3 +120,27 @@ func UpsertOrder(data *futures.Order) {
 		global.DB.Model(Order{}).Create(data)
 	}
 }
+
+func GetAllPlan() ([]Plan, error) {
+	list := make([]Plan, 0)
+	err := global.DB.Model(Plan{}).Find(&list).Error
+	return list, err
+}
+
+func GetPlanById(id int64) (Plan, error) {
+	data := Plan{}
+	err := global.DB.Model(Plan{}).Where("id", id).First(&data).Error
+	return data, err
+}
+
+func SavePlan(data Plan) error {
+	return global.DB.Model(data).Save(data).Error
+}
+
+func CreatePlan(data *Plan) error {
+	return global.DB.Model(data).Create(&data).Error
+}
+
+func DelPlan(id int64) error {
+	return global.DB.Model(Plan{}).Where("id", id).Delete()
+}

@@ -374,3 +374,52 @@ func CombineAccountTrade() []dao.CombineOrder {
 
 	return combineOrderList
 }
+
+func GetPlanList() ([]global.GetPlanListResPlan, error) {
+	var res []global.GetPlanListResPlan
+	list, err := dao.GetAllPlan()
+	for _, item := range list {
+		tmp := global.GetPlanListResPlan{
+			Id:         item.Id,
+			Symbol:     item.Symbol,
+			OpenPrice:  item.OpenPrice,
+			LossPrice:  item.LossPrice,
+			WinPrice:   item.LossPrice,
+			Notice:     item.Notice,
+			AutoTrade:  item.AutoTrade,
+			CreateTime: item.CreateTime.Unix(),
+		}
+		res = append(res, tmp)
+	}
+	return res, err
+}
+
+func SavePlan(req global.SavePlanReq) error {
+	if req.Id != 0 { // 更新
+		data, err := dao.GetPlanById(req.Id)
+		if err != nil {
+			return err
+		}
+		if data.Id == 0 {
+			return errors.New("id 不存在")
+		}
+		data.OpenPrice = req.OpenPrice
+		data.Symbol = req.Symbol
+		dao.SavePlan(data)
+	} else { // 新增
+		data := dao.Plan{
+			Symbol:     req.Symbol,
+			OpenPrice:  req.OpenPrice,
+			CreateTime: time.Now(),
+			UpdateTime: time.Now(),
+		}
+		err := dao.CreatePlan(&data)
+		return err
+	}
+
+	return nil
+}
+
+func DelPlan(req global.DelPlanReq) error {
+
+}

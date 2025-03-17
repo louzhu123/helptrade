@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>plan</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .plan-section {
+            margin-bottom: 30px;
+        }
+
+        .plan-section h2 {
+            border-bottom: 2px solid #ccc;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            color: #444;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        table,
+        th,
+        td {
+            border: 1px solid #ddd;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f8f8f8;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        select {
+            width: 100px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .autocomplete-items {
+            position: relative;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            border-top: none;
+            z-index: 99;
+            background-color: white;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .autocomplete-items div {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .autocomplete-items div:hover {
+            background-color: #f1f1f1;
+        }
+
+        .no-results {
+            padding: 10px;
+            color: #888;
+        }
+
+        .checkbox-group {
+            margin-bottom: 20px;
+            width: 100px;
+        }
+
+        .checkbox-item {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        .checkbox-item input {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+
+        <div class="plan-section">
+            <h2>record</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>交易品种</th>
+                        <th>方向</th>
+                        <th>开仓价格</th>
+                        <th>止损价格</th>
+                        <th>止盈价格</th>
+                        <th>分析</th>
+                        <th>功能</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="plans"></tbody>
+
+            </table>
+            <button type="button" id="add-trade">添加交易记录</button>
+        </div>
+
+
+    </div>
+
+    <script>
+        // 添加交易记录行
+        function prependRow(element) {
+
+            const tbody = document.querySelector('tbody');
+            const newRow = document.createElement('tr');
+
+            if (typeof element === 'undefined') {
+                element = {}
+            }
+
+            const openPrice = element.openPrice
+            const id = element.id
+
+            newRow.innerHTML = `
+                        <td><label class="id">${id}</label></td>
+                        <td>
+                            <input type="text" class="autocomplete symbol">
+                            <div class="autocomplete-list" class="autocomplete-items"></div>
+                        </td>
+                        <td>
+                            <select>
+                                <option> 买入 </option>
+                                <option> 卖出 </option>
+                            </select>
+                        </td>
+                        <td>
+                            <input class="openPrice" type="number" step="any" value="${openPrice}">
+                        </td>
+                        <td>
+                            <div class="form-group">
+                                <input type="number" class="lossPercentage" step="any" placeholder="例如: 10 或 -5">
+                            </div>
+                            <div class="form-group">
+                                <input type="number" class="lossPrice">
+                            </div>
+                        </td>
+                        <td>
+                            <div class="form-group">
+                                <input type="number" class="winPercentage" step="any" placeholder="例如: 10 或 -5">
+                            </div>
+                            <div class="form-group">
+                                <input type="number" class="winPrice">
+                            </div>
+                        </td>
+                        <td><input type="text"></td>
+                        <td>
+                            <div class="checkbox-group">
+                                <div class="checkbox-item">
+                                    <input type="checkbox" name="option1" value="notice">
+                                    <label>价格提醒</label>
+                                </div>
+                                <div class="checkbox-item">
+                                    <input type="checkbox" name="option2" value="auto-trade">
+                                    <label>自动交易</label>
+                                </div>
+                            </div>
+                        </td>
+                        <td style="width: 130px;">
+                            <button type="button" class="save">保存</button>
+                            <button type="button" class="del">删除</button>
+                        </td>
+            `;
+
+            tbody.prepend(newRow);
+
+            initEvnet(newRow)
+        }
+
+        document.getElementById('add-trade').addEventListener('click', function () {
+            prependRow()
+        })
+    </script>
+
+    <script>
+
+        function initEvnet(row) {
+
+            const tbody = document.querySelector('tbody');
+
+            // 添加删除功能
+            row.querySelector('.del').addEventListener('click', function () {
+                tbody.removeChild(row);
+            });
+
+            // 保存功能
+            row.querySelector('.save').addEventListener('click', async () => {
+                const openPrice = row.querySelector('.openPrice').value;
+                const id = row.querySelector('.id').innerHTML
+                const symbol = row.querySelector('.symbol').value
+
+                try {
+                    await fetch('http://127.0.0.1:8080/savePlan', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ id: Number(id), symbol: symbol,openPrice:openPrice})
+                    });
+
+                    alert('保存成功');
+                } catch (error) {
+                    alert('保存失败，请稍后重试');
+                }
+            });
+
+            // symbol自动补全功能
+            const tradingInstruments = [
+                "BTC", "BCH", "ETH", "LTC", "XRP", "DOGE", "DOT", "ADA", "LINK", "UNI",
+                "MATIC", "XLM", "TRX", "BNB", "SOL", "AVAX", "ATOM", "VET", "ALGO", "FIL",
+                "THETA", "IOTA", "XMR", "ZEC", "DASH", "EOS", "XTZ", "BSV", "NEO", "QTUM",
+                "ZIL", "OMG", "BAT", "KSM", "HNT", "ICP", "AAVE", "COMP", "SNX", "CRV"
+            ];
+            const autocompleteInput = row.querySelector(".autocomplete");
+            const autocompleteList = row.querySelector(".autocomplete-list");
+
+            autocompleteInput.addEventListener("input", function () {
+                const inputVal = this.value.toUpperCase();
+                autocompleteList.innerHTML = "";
+                if (inputVal.length === 0) {
+                    autocompleteList.style.display = "none";
+                    return;
+                }
+                const matches = tradingInstruments.filter(item =>
+                    item.startsWith(inputVal)
+                );
+
+                if (matches.length === 0) {
+                    autocompleteList.innerHTML = "<div class='no-results'>无匹配项</div>";
+                    autocompleteList.style.display = "block";
+                } else {
+                    matches.forEach(match => {
+                        const item = document.createElement("div");
+                        item.textContent = match;
+                        item.addEventListener("click", function () {
+                            autocompleteInput.value = match;
+                            autocompleteList.style.display = "none";
+                        });
+                        autocompleteList.appendChild(item);
+                    });
+                    autocompleteList.style.display = "block";
+                }
+            });
+
+            // 百分比计算价格功能
+            const openPriceInput = row.querySelector('.openPrice');
+            const winPercentageInput = row.querySelector('.winPercentage');
+            const winPriceInput = row.querySelector('.winPrice');
+
+            winPercentageInput.addEventListener('input', function () {
+                const originalValue = Number(openPriceInput.value);
+                const winPercentage = parseFloat(this.value);
+                const result = originalValue * (1 + winPercentage / 100);
+                winPriceInput.value = result.toFixed(2);
+            });
+
+            const lossPercentageInput = row.querySelector('.lossPercentage');
+            const lossPriceInput = row.querySelector('.lossPrice');
+
+            lossPercentageInput.addEventListener('input', function () {
+                const originalValue = Number(openPriceInput.value);
+                const lossPercentage = parseFloat(this.value);
+                const result = originalValue * (1 + lossPercentage / 100);
+                lossPriceInput.value = result.toFixed(2);
+            });
+        }
+
+    </script>
+
+    <script>
+
+        async function fetchPlans(filterParams) {
+            const url = `http://127.0.0.1:8080/getPlanList`
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                });
+
+                // 处理HTTP错误状态
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `HTTP错误! 状态码: ${response.status}`);
+                }
+
+                // 解析JSON数据
+                const data = await response.json();
+
+                // 转换数据格式（根据实际API响应结构调整）
+                return data.message.map(item => ({
+                    id: item.id,
+                    symbol: item.symbol,
+                    openPrice: item.openPrice,
+                    lossPrice: item.lossPrice,
+                    winPrice: item.lossPrice,
+                    notice: item.notice,
+                    autoTrade: item.autoTrade,
+                    createTime: item.createTime,
+                }));
+
+            } catch (error) {
+                alert(`数据加载失败: ${error.message}`);
+                return []; // 返回空数组保证页面正常渲染
+            }
+        }
+
+        async function renderTable(plans) {
+            plans.forEach(element => {
+                prependRow(element)
+            });
+        }
+
+
+        (async function init() {
+            const plans = await fetchPlans()
+            await renderTable(plans)
+        })();
+
+
+    </script>
+</body>
+
+</html>

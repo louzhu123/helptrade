@@ -74,5 +74,8 @@ func main() {
 	r.GET("/getCombineOrderList", controller.GetCombineOrderList)
 	r.POST("/editCommnet", controller.EditCommnet)
 
+	r.GET("/getPlanList", controller.GetPlanList)
+	r.POST("/savePlan", controller.SavePlan)
+
 	r.Run()
 }

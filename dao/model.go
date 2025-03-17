@@ -1,5 +1,7 @@
 package dao
 
+import "time"
+
 type Order struct {
 	Symbol                  string `json:"symbol" gorm:"column:symbol"`
 	OrderId                 int64  `json:"orderId" gorm:"column:orderId"`
@@ -76,4 +78,20 @@ type CombineOrder struct {
 
 func (CombineOrder) TableName() string {
 	return "combine_order"
+}
+
+type Plan struct {
+	Id         int64     `json:"id" gorm:"column:id"`
+	Symbol     string    `json:"symbol"`
+	OpenPrice  string    `json:"openPrice" gorm:"column:openPrice"`
+	LossPrice  string    `json:"lossPrice" gorm:"column:lossPrice"`
+	WinPrice   string    `json:"winPrice" gorm:"column:winPrice"`
+	Notice     int       `json:"notice" gorm:"column:notice"`
+	AutoTrade  int       `json:"autoTrade" gorm:"column:autoTrade"`
+	CreateTime time.Time `json:"createTime" gorm:"column:createTime"`
+	UpdateTime time.Time `json:"updateTime" gorm:"column:updateTime"`
+}
+
+func (Plan) TableName() string {
+	return "plan"
 }
