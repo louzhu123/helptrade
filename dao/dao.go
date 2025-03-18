@@ -208,6 +208,6 @@ func GetUserByToken(token string) (User, error) {
 
 func GetUserByUserId(userId int) (User, error) {
 	user := User{}
-	err := global.DB.Model(User{}).Where("userId", userId).First(&user).Error
+	err := global.DB.Model(User{}).Where("id", userId).First(&user).Error
 	return user, err
 }
