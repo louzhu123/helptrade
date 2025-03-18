@@ -35,19 +35,23 @@ func DoPlan() error {
 			user, _ := dao.GetUserByUserId(plan.UserId)
 
 			// 通知并更新
-			req := miaoNotice.SendReq{
-				Id:   user.MiaoNoticeId,
-				Text: fmt.Sprintf("%v 到达目标价 %v", plan.Symbol, plan.OpenPrice),
+			if plan.Notice == 1 {
+				req := miaoNotice.SendReq{
+					Id:   user.MiaoNoticeId,
+					Text: fmt.Sprintf("%v 到达目标价 %v", plan.Symbol, plan.OpenPrice),
+				}
+				miaoNotice.SendWechat(req)
 			}
-			miaoNotice.SendWechat(req)
 
-			client := binance.NewBinanceUsdtContractClient(user.BnApiKey, user.BnApiSecret)
-			zhisunPrice, _ := strconv.ParseFloat(plan.LossPrice, 64)
-			zhiyingPrice, _ := strconv.ParseFloat(plan.WinPrice, 64)
-			if plan.PositionSide == "LONG" {
-				client.DuoV3(plan.Symbol, 100, zhisunPrice, zhiyingPrice, currentPrice)
-			} else {
-				client.KongV3(plan.Symbol, 100, zhisunPrice, zhiyingPrice, currentPrice)
+			if plan.AutoTrade == 1 {
+				client := binance.NewBinanceUsdtContractClient(user.BnApiKey, user.BnApiSecret)
+				zhisunPrice, _ := strconv.ParseFloat(plan.LossPrice, 64)
+				zhiyingPrice, _ := strconv.ParseFloat(plan.WinPrice, 64)
+				if plan.PositionSide == "LONG" {
+					client.DuoV3(plan.Symbol, 100, zhisunPrice, zhiyingPrice, currentPrice)
+				} else {
+					client.KongV3(plan.Symbol, 100, zhisunPrice, zhiyingPrice, currentPrice)
+				}
 			}
 
 			dao.DonePlan(plan.Id)

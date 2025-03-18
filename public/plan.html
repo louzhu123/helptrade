@@ -188,8 +188,8 @@
 
             const openPrice = element.openPrice
             const id = element.id
-            const notice = element.notice
-            const autoTrade = element.autoTrade
+            const notice = element.notice == 1 ? "checked":""
+            const autoTrade = element.autoTrade == 1 ? "checked":""
             const symbol = element.symbol
             const positionSide = element.positionSide
             let longSelected = ""
@@ -232,11 +232,11 @@
                         <td>
                             <div class="checkbox-group">
                                 <div class="checkbox-item">
-                                    <input type="checkbox" class="notice" checked="${notice}">
+                                    <input type="checkbox" class="notice" ${notice}>
                                     <label>价格提醒</label>
                                 </div>
                                 <div class="checkbox-item">
-                                    <input type="checkbox" class="autoTrade" value="autoTrade" checked="${autoTrade}">
+                                    <input type="checkbox" class="autoTrade" ${autoTrade}>
                                     <label>自动交易</label>
                                 </div>
                             </div>
@@ -277,6 +277,7 @@
                 const positionSide = row.querySelector('.long').selected ? "LONG" : "SHORT"
                 const lossPrice = row.querySelector('.lossPrice').value
                 const winPrice = row.querySelector('.winPrice').value
+                const autoTrade = row.querySelector('.autoTrade').checked ? 1 : 0
 
                 try {
                     const params = new URLSearchParams(window.location.search);
@@ -295,6 +296,7 @@
                             positionSide: positionSide,
                             lossPrice: lossPrice,
                             winPrice: winPrice,
+                            autoTrade: autoTrade,
                         })
                     });
 
