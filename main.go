@@ -88,13 +88,13 @@ func main() {
 			time.Sleep(30 * time.Minute)
 		}
 	}()
-	// go func() {
-	// 	for {
-	// 		log.Println("doPlan")
-	// 		service.DoPlan()
-	// 		time.Sleep(5 * time.Second)
-	// 	}
-	// }()
+
+	go func() {
+		for {
+			service.DoPlan()
+			time.Sleep(5 * time.Second)
+		}
+	}()
 
 	r := gin.Default()
 

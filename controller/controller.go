@@ -50,7 +50,10 @@ func GetPlanList(c *gin.Context) {
 	// 	return
 	// }
 
-	list, _ := service.GetPlanList()
+	userInfo, _ := c.Get("user")
+	user := userInfo.(dao.User)
+
+	list, _ := service.GetPlanList(user.Id)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": list,
@@ -64,7 +67,9 @@ func SavePlan(c *gin.Context) {
 		return
 	}
 
-	service.SavePlan(req)
+	userInfo, _ := c.Get("user")
+	user := userInfo.(dao.User)
+	service.SavePlan(user.Id, req)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "ok",

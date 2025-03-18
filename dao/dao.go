@@ -156,14 +156,30 @@ func GetAllPlan() ([]Plan, error) {
 	return list, err
 }
 
+func GetPlanByUserId(userId int) ([]Plan, error) {
+	list := make([]Plan, 0)
+	err := global.DB.Model(Plan{}).Where("userId", userId).Find(&list).Error
+	return list, err
+}
+
 func GetPlanById(id int64) (Plan, error) {
 	data := Plan{}
 	err := global.DB.Model(Plan{}).Where("id", id).First(&data).Error
 	return data, err
 }
 
+func GetUserPlanById(userid int, id int64) (Plan, error) {
+	data := Plan{}
+	err := global.DB.Model(Plan{}).Where("userId", userid).Where("id", id).First(&data).Error
+	return data, err
+}
+
 func SavePlan(data Plan) error {
 	return global.DB.Model(data).Save(data).Error
+}
+
+func UpdatePlan(userId int, data Plan) error {
+	return global.DB.Model(data).Where("userId", userId).Save(data).Error
 }
 
 func CreatePlan(data *Plan) error {
@@ -187,5 +203,11 @@ func GetAllUser() ([]User, error) {
 func GetUserByToken(token string) (User, error) {
 	user := User{}
 	err := global.DB.Model(User{}).Where("token", token).First(&user).Error
+	return user, err
+}
+
+func GetUserByUserId(userId int) (User, error) {
+	user := User{}
+	err := global.DB.Model(User{}).Where("userId", userId).First(&user).Error
 	return user, err
 }

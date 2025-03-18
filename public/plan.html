@@ -174,6 +174,8 @@
     </div>
 
     <script>
+        const host = "http://127.0.0.1:8080/api"
+
         // 添加交易记录行
         function prependRow(element) {
 
@@ -187,11 +189,12 @@
             const openPrice = element.openPrice
             const id = element.id
             const notice = element.notice
+            const autoTrade = element.autoTrade
             const symbol = element.symbol
             const positionSide = element.positionSide
             let longSelected = ""
             let shortSelected = ""
-            if (positionSide == "LONG")  longSelected = "selected"
+            if (positionSide == "LONG") longSelected = "selected"
             if (positionSide == "SHORT") shortSelected = "selected"
 
             newRow.innerHTML = `
@@ -214,7 +217,7 @@
                                 <input type="number" class="lossPercentage" step="any" placeholder="例如: 10 或 -5">
                             </div>
                             <div class="form-group">
-                                <input type="number" class="lossPrice">
+                                <input type="number" class="lossPrice" value="${element.lossPrice}">
                             </div>
                         </td>
                         <td>
@@ -222,7 +225,7 @@
                                 <input type="number" class="winPercentage" step="any" placeholder="例如: 10 或 -5">
                             </div>
                             <div class="form-group">
-                                <input type="number" class="winPrice">
+                                <input type="number" class="winPrice" value="${element.winPrice}">
                             </div>
                         </td>
                         <td><input type="text"></td>
@@ -233,7 +236,7 @@
                                     <label>价格提醒</label>
                                 </div>
                                 <div class="checkbox-item">
-                                    <input type="checkbox" class="autoTrade" value="autoTrade">
+                                    <input type="checkbox" class="autoTrade" value="autoTrade" checked="${autoTrade}">
                                     <label>自动交易</label>
                                 </div>
                             </div>
@@ -271,20 +274,27 @@
                 const id = row.querySelector('.id').innerHTML
                 const symbol = row.querySelector('.symbol').value
                 const notice = row.querySelector('.notice').checked ? 1 : 0
-                const positionSide = row.querySelector('.long').selected ? "LONG":"SHORT"
+                const positionSide = row.querySelector('.long').selected ? "LONG" : "SHORT"
+                const lossPrice = row.querySelector('.lossPrice').value
+                const winPrice = row.querySelector('.winPrice').value
 
                 try {
-                    await fetch('http://127.0.0.1:8080/savePlan', {
+                    const params = new URLSearchParams(window.location.search);
+                    const token = params.get('token')
+                    await fetch(`${host}/savePlan`, {
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/json'
+                            'Content-Type': 'application/json',
+                            'token': token
                         },
-                        body: JSON.stringify({ 
-                            id: Number(id), 
-                            symbol: symbol, 
+                        body: JSON.stringify({
+                            id: Number(id),
+                            symbol: symbol,
                             openPrice: openPrice,
                             notice: notice,
                             positionSide: positionSide,
+                            lossPrice: lossPrice,
+                            winPrice: winPrice,
                         })
                     });
 
@@ -360,13 +370,16 @@
     <script>
 
         async function fetchPlans(filterParams) {
-            const url = `http://127.0.0.1:8080/getPlanList`
+            const url = `${host}/getPlanList`
             try {
+                const params = new URLSearchParams(window.location.search);
+                const token = params.get('token')
                 const response = await fetch(url, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'token': token
                     },
                 });
 

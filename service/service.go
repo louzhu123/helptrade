@@ -424,9 +424,9 @@ func CombineAccountTrade(ctx Ctx) []dao.CombineOrder {
 	return combineOrderList
 }
 
-func GetPlanList() ([]global.GetPlanListResPlan, error) {
+func GetPlanList(userId int) ([]global.GetPlanListResPlan, error) {
 	var res []global.GetPlanListResPlan
-	list, err := dao.GetAllPlan()
+	list, err := dao.GetPlanByUserId(userId)
 	for _, item := range list {
 		tmp := global.GetPlanListResPlan{
 			Id:           item.Id,
@@ -444,9 +444,9 @@ func GetPlanList() ([]global.GetPlanListResPlan, error) {
 	return res, err
 }
 
-func SavePlan(req global.SavePlanReq) error {
+func SavePlan(userId int, req global.SavePlanReq) error {
 	if req.Id != 0 { // 更新
-		data, err := dao.GetPlanById(req.Id)
+		data, err := dao.GetUserPlanById(userId, req.Id)
 		if err != nil {
 			return err
 		}
@@ -457,13 +457,20 @@ func SavePlan(req global.SavePlanReq) error {
 		data.Symbol = req.Symbol
 		data.Notice = req.Notice
 		data.PositionSide = req.PositionSide
-		dao.SavePlan(data)
+		data.LossPrice = req.LossPrice
+		data.WinPrice = req.WinPrice
+		data.AutoTrade = req.AutoTrade
+		dao.UpdatePlan(userId, data)
 	} else { // 新增
 		data := dao.Plan{
 			Symbol:       req.Symbol,
 			OpenPrice:    req.OpenPrice,
 			Notice:       req.Notice,
 			PositionSide: req.PositionSide,
+			UserId:       userId,
+			WinPrice:     req.WinPrice,
+			LossPrice:    req.LossPrice,
+			AutoTrade:    req.AutoTrade,
 			CreateTime:   time.Now(),
 			UpdateTime:   time.Now(),
 		}

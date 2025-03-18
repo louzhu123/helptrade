@@ -36,6 +36,9 @@ type SavePlanReq struct {
 	OpenPrice    string `json:"openPrice" form:"openPrice"`
 	Notice       int    `json:"notice" form:"notice"`
 	PositionSide string `json:"positionSide" form:"positionSide"`
+	LossPrice    string `json:"lossPrice" form:"lossPrice"`
+	WinPrice     string `json:"winPrice" form:"winPrice"`
+	AutoTrade    int    `json:"autoTrade" form:"autoTrade"`
 }
 
 type DelPlanReq struct {

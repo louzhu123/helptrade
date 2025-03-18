@@ -1,11 +1,11 @@
 package service
 
 import (
+	"common/binance"
 	"common/binanceWs"
 	"common/miaoNotice"
 	"fmt"
 	"helptrade/dao"
-	"helptrade/global"
 	"strconv"
 )
 
@@ -18,27 +18,39 @@ func DoPlan() error {
 	list, _ := dao.GetAllPlan()
 
 	symbolPrice := binanceWs.HttpGetFutureSymbolCurrentPriceMap()
-	for _, item := range list {
-		if item.Status == PlanStatusDone {
+	for _, plan := range list {
+		if plan.Status == PlanStatusDone {
 			continue
 		}
-		if _, ok := symbolPrice[item.Symbol]; !ok {
+		if _, ok := symbolPrice[plan.Symbol]; !ok {
 			continue
 		}
 
-		openPriceFloat, _ := strconv.ParseFloat(item.OpenPrice, 64)
-		currentPrice := symbolPrice[item.Symbol]
+		openPriceFloat, _ := strconv.ParseFloat(plan.OpenPrice, 64)
+		currentPrice := symbolPrice[plan.Symbol]
 
-		if item.PositionSide == "LONG" && currentPrice <= openPriceFloat ||
-			item.PositionSide == "SHORT" && currentPrice >= openPriceFloat {
+		if plan.PositionSide == "LONG" && currentPrice <= openPriceFloat ||
+			plan.PositionSide == "SHORT" && currentPrice >= openPriceFloat {
+			// 获取用户信息
+			user, _ := dao.GetUserByUserId(plan.UserId)
+
 			// 通知并更新
 			req := miaoNotice.SendReq{
-				Id:   global.Cfg.MiaoNoticeId,
-				Text: fmt.Sprintf("%v 到达目标价 %v", item.Symbol, item.OpenPrice),
+				Id:   user.MiaoNoticeId,
+				Text: fmt.Sprintf("%v 到达目标价 %v", plan.Symbol, plan.OpenPrice),
 			}
 			miaoNotice.SendWechat(req)
 
-			dao.DonePlan(item.Id)
+			client := binance.NewBinanceUsdtContractClient(user.BnApiKey, user.BnApiSecret)
+			zhisunPrice, _ := strconv.ParseFloat(plan.LossPrice, 64)
+			zhiyingPrice, _ := strconv.ParseFloat(plan.WinPrice, 64)
+			if plan.PositionSide == "LONG" {
+				client.DuoV3(plan.Symbol, 100, zhisunPrice, zhiyingPrice, currentPrice)
+			} else {
+				client.KongV3(plan.Symbol, 100, zhisunPrice, zhiyingPrice, currentPrice)
+			}
+
+			dao.DonePlan(plan.Id)
 		}
 
 	}
