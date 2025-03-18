@@ -213,6 +213,8 @@
 
     <script>
 
+        const host = "http://127.0.0.1:8080/api"
+
         async function fetchTransactions(filterParams) {
             const params = new URLSearchParams({
                 openSide: filterParams.openSide ? filterParams.openSide : "ALL",
@@ -222,13 +224,16 @@
                 amountMin: filterParams.amountMin ? filterParams.amountMin : 0, 
                 amountMax: filterParams.amountMax ? filterParams.amountMax : 0, 
             });
-            const url = `http://127.0.0.1:8080/getCombineOrderList?${params}`
+            const url = `${host}/getCombineOrderList?${params}`
             try {
+                const params = new URLSearchParams(window.location.search);
+                const token = params.get('token')
                 const response = await fetch(url, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'token':  token,
                     },
 
                 });
@@ -396,7 +401,7 @@
                     <td>${avgMaxCumQuote.toFixed(0)}</td>
                     <td>${avgTakeTime.toFixed(0)}分钟</td>
                     <td>总笔数:${transactions.length}<br>${totalCommission.toFixed(2)}</td>
-                    <td>净盈亏:${totalPnl.toFixed(2)} <br> 总盈利:${win.toFixed(0)} <br> 总亏损:${loss.toFixed(0)} <br> 平均亏损:${avgLoss.toFixed(0)} <br> 估算平均止损设置:${avgLoss.toFixed(0) * 3}</td>
+                    <td>净盈亏:${totalPnl.toFixed(2)} <br> 总盈利:${win.toFixed(0)} <br> 总亏损:${loss.toFixed(0)} <br> 平均亏损:${avgLoss.toFixed(0)} </td>
                     <td>胜率:${winRate.toFixed(2)} <br> 平均盈亏比:${avgWinLossRate.toFixed(2)} <br> 期望值:${(winRate*avgWinLossRate -(1-winRate)).toFixed(3)}</td>
                     <td></td>
                     <td></td>
@@ -452,10 +457,13 @@
                 const newReview = document.getElementById('reviewEdit').value;
 
                 try {
-                    await fetch('http://127.0.0.1:8080/editCommnet', {
+                    const params = new URLSearchParams(window.location.search);
+                    const token = params.get('token')
+                    await fetch(`${host}/editCommnet`, {
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/json'
+                            'Content-Type': 'application/json',
+                            'token':token
                         },
                         body: JSON.stringify({ id: currentTransaction.id, comment: newReview })
                     });

@@ -15,19 +15,46 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-func FetchAndCombineOrder() {
-	FetchAndSaveAllAccountTrade()
-
-	FetchAndSaveAllOrder()
-
-	list := CombineAccountOrder()
-	dao.UpsertCombineOrder(list)
+type Ctx struct {
+	User dao.User
 }
 
-func FetchAllAccountTrade() ([]*futures.AccountTrade, error) {
-	futuresClient := binance.NewFuturesClient(global.Cfg.ApiKey, global.Cfg.SecretKey)
+// func FetchAndCombineOrder() {
+// 	users, _ := dao.GetAllUser()
+// 	for _, user := range users {
+// 		ctx := Ctx{User: user}
+// 		FetchAndSaveAllAccountTrade(ctx)
+
+// 		FetchAndSaveAllOrder(ctx)
+
+// 		list := CombineAccountOrder(ctx)
+// 		dao.UpsertCombineOrder(list)
+// 	}
+// }
+
+func FetchAndCombineAccountTrade() {
+	users, _ := dao.GetAllUser()
+	for _, user := range users {
+		fmt.Printf("%+v", user)
+		ctx := Ctx{User: user}
+		FetchAndSaveAllAccountTrade(ctx)
+
+		FetchAndSaveAllOrder(ctx)
+
+		list := CombineAccountTrade(ctx)
+		dao.UpsertCombineOrder(list)
+	}
+}
+
+func FetchAllAccountTrade(ctx Ctx, startUninxMilli int64) ([]*futures.AccountTrade, error) {
+	apiKey := ctx.User.BnApiKey
+	apiSecret := ctx.User.BnApiSecret
+	futuresClient := binance.NewFuturesClient(apiKey, apiSecret)
 	t := time.Now()
-	startTimeUnix := t.Unix()*1000 - 500*24*60*60*1000
+	startTimeUnix := t.Unix()*1000 - 500*24*60*60*1000 // 默认500天前开始 TODO 其他用户应该还有甚至几年的
+	if startUninxMilli != 0 {
+		startTimeUnix = startUninxMilli - 1000*200
+	}
 	endTimeUnix := startTimeUnix + 7*24*60*60*1000
 	maxTime := 1000 // 最多循环1000次应该获取完近90天的数据了
 	times := 0
@@ -89,21 +116,35 @@ func FetchAllAccountTrade() ([]*futures.AccountTrade, error) {
 	return allData, nil
 }
 
-func FetchAndSaveAllAccountTrade() {
-	list, err := FetchAllAccountTrade() // 数据会重复，为了能获取完整，时间窗口会有重叠
+func FetchAndSaveAllAccountTrade(ctx Ctx) {
+	// 获取最新一条数据
+	latest, _ := dao.GetLastestAccountTradeByUserId(ctx.User.Id)
+	startTime := latest.Time
+
+	list, err := FetchAllAccountTrade(ctx, startTime) // 数据会重复，为了能获取完整，时间窗口会有重叠
 	if err != nil {
 		return
 	}
 
 	for _, v := range list {
-		dao.UpsertAccountTrade(v)
+		data := dao.AccountTrade{}
+		b, _ := json.Marshal(v)
+		json.Unmarshal(b, &data)
+		data.UserId = ctx.User.Id
+		dao.UpsertAccountTrade(data)
 	}
 }
 
-func FetchAllOrder() ([]*futures.Order, error) {
-	futuresClient := binance.NewFuturesClient(global.Cfg.ApiKey, global.Cfg.SecretKey)
+func FetchAllOrder(ctx Ctx, startUninxMilli int64) ([]*futures.Order, error) {
+	apiKey := ctx.User.BnApiKey
+	apiSecret := ctx.User.BnApiSecret
+	futuresClient := binance.NewFuturesClient(apiKey, apiSecret)
 	t := time.Now()
-	startTimeUnix := t.Unix()*1000 - 90*24*60*60*1000 + 1000*10
+	startTimeUnix := t.Unix()*1000 - 90*24*60*60*1000 + 1000*10 // 加个10s，访问过程中已经过了一秒的90天窗口
+	if startUninxMilli != 0 {
+		startTimeUnix = startTimeUnix - 1000*200
+	}
+
 	endTimeUnix := startTimeUnix + 7*24*60*60*1000
 	maxTime := 1000 // 最多循环1000次应该获取完近90天的数据了
 	times := 0
@@ -127,7 +168,7 @@ func FetchAllOrder() ([]*futures.Order, error) {
 			return nil, errors.New("times too many")
 		}
 		res, err := futuresClient.NewListOrdersService().
-			StartTime(startTimeUnix).EndTime(endTimeUnix).Limit(10000).Do(context.Background())
+			StartTime(startTimeUnix).EndTime(endTimeUnix).Limit(1000).Do(context.Background())
 		fmt.Println("len(res)", len(res))
 		if err != nil {
 			fmt.Println(err)
@@ -156,14 +197,20 @@ func FetchAllOrder() ([]*futures.Order, error) {
 	return allData, nil
 }
 
-func FetchAndSaveAllOrder() {
-	list, err := FetchAllOrder()
+func FetchAndSaveAllOrder(ctx Ctx) {
+	lastest, _ := dao.GetLastestOrderByUserId(ctx.User.Id)
+	startTime := lastest.Time
+	list, err := FetchAllOrder(ctx, startTime)
 	if err != nil {
 		return
 	}
 
 	for _, v := range list {
-		dao.UpsertOrder(v)
+		data := dao.Order{}
+		b, _ := json.Marshal(v)
+		json.Unmarshal(b, &data)
+		data.UserId = ctx.User.Id
+		dao.UpsertOrder(data)
 	}
 }
 
@@ -174,7 +221,7 @@ type TmpCombineOrder struct {
 	Order           dao.CombineOrder
 }
 
-func CombineAccountOrder() []dao.CombineOrder {
+func CombineAccountOrder(ctx Ctx) []dao.CombineOrder {
 
 	// 仓位状态
 	tmpCombineOrder := make(map[string]TmpCombineOrder, 0)
@@ -182,7 +229,7 @@ func CombineAccountOrder() []dao.CombineOrder {
 	// 合并数据
 	combineOrderList := make([]dao.CombineOrder, 0)
 
-	list, _ := dao.GetAllOrder()
+	list, _ := dao.GetAllOrderByUserId(ctx.User.Id)
 
 	for _, v := range list {
 		endFlag := false
@@ -252,6 +299,7 @@ func CombineAccountOrder() []dao.CombineOrder {
 
 			originOrdersStr, _ := json.Marshal(tmpOrder.OriginOrders)
 			tmpOrder.Order.OriginOrders = string(originOrdersStr)
+			tmpOrder.Order.UserId = ctx.User.Id
 			combineOrderList = append(combineOrderList, tmpOrder.Order)
 			tmpCombineOrder[v.Symbol] = TmpCombineOrder{}
 		}
@@ -272,7 +320,7 @@ type TmpCombineAccountTrade struct {
 	Order           dao.CombineOrder
 }
 
-func CombineAccountTrade() []dao.CombineOrder {
+func CombineAccountTrade(ctx Ctx) []dao.CombineOrder {
 
 	// 仓位状态
 	tmpCombineOrder := make(map[string]TmpCombineAccountTrade, 0)
@@ -280,7 +328,7 @@ func CombineAccountTrade() []dao.CombineOrder {
 	// 合并数据
 	combineOrderList := make([]dao.CombineOrder, 0)
 
-	list, _ := dao.GetAllAccountTrade()
+	list, _ := dao.GetAccountTradeByUserId(ctx.User.Id)
 	// fmt.Println(len(list))
 
 	for _, v := range list {
@@ -362,6 +410,7 @@ func CombineAccountTrade() []dao.CombineOrder {
 
 			originOrdersStr, _ := json.Marshal(tmpOrder.OriginOrders)
 			tmpOrder.Order.OriginOrders = string(originOrdersStr)
+			tmpOrder.Order.UserId = ctx.User.Id
 			combineOrderList = append(combineOrderList, tmpOrder.Order)
 			tmpCombineOrder[v.Symbol] = TmpCombineAccountTrade{}
 		}
@@ -428,4 +477,8 @@ func SavePlan(req global.SavePlanReq) error {
 func DelPlan(req global.DelPlanReq) error {
 	dao.DelPlan(req.Id)
 	return nil
+}
+
+func GetUserByToken(token string) (dao.User, error) {
+	return dao.GetUserByToken(token)
 }

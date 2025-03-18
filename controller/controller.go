@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"helptrade/dao"
 	"helptrade/global"
 	"helptrade/service"
@@ -17,9 +16,10 @@ func GetCombineOrderList(c *gin.Context) {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
-	fmt.Println(req)
 
-	list, _ := dao.QueryCombineOrder(req)
+	userInfo, _ := c.Get("user")
+	user := userInfo.(dao.User)
+	list, _ := dao.QueryCombineOrder(user.Id, req)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": list,
@@ -33,7 +33,10 @@ func EditCommnet(c *gin.Context) {
 		return
 	}
 
-	dao.UpdateCombineOrderComment(req.Id, req.Comment)
+	userInfo, _ := c.Get("user")
+	user := userInfo.(dao.User)
+
+	dao.UpdateCombineOrderComment(int64(user.Id), req.Id, req.Comment)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "ok",

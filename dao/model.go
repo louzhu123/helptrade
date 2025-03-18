@@ -30,6 +30,7 @@ type Order struct {
 	PriceMatch              string `json:"priceMatch" gorm:"column:priceMatch"`
 	SelfTradePreventionMode string `json:"selfTradePreventionMode" gorm:"column:selfTradePreventionMode"`
 	GoodTillDate            int    `json:"goodTillDate" gorm:"column:goodTillDate"`
+	UserId                  int    `json:"userId" gorm:"column:userId"`
 }
 
 func (Order) TableName() string {
@@ -51,6 +52,7 @@ type AccountTrade struct {
 	PositionSide    string `json:"positionSide" gorm:"column:positionSide;type:varchar(255);not_null"`
 	Symbol          string `json:"symbol" gorm:"column:symbol;type:varchar(255);not_null"`
 	Time            int64  `json:"time" gorm:"column:time;type:bigint;not_null"`
+	UserId          int    `json:"userId" gorm:"column:userId"`
 }
 
 func (AccountTrade) TableName() string {
@@ -74,6 +76,7 @@ type CombineOrder struct {
 	ClosePrice         float64 `json:"closePrice" gorm:"column:closePrice"`
 	OriginOrders       string  `json:"originOrders" gorm:"column:originOrders"`
 	Commission         float64 `json:"commission" gorm:"column:commission"`
+	UserId             int     `json:"userId" gorm:"column:userId"`
 }
 
 func (CombineOrder) TableName() string {
@@ -92,8 +95,21 @@ type Plan struct {
 	UpdateTime   time.Time `json:"updateTime" gorm:"column:updateTime"`
 	Status       int       `json:"status" gorm:"column:status"`
 	PositionSide string    `json:"positionSide" gorm:"column:positionSide"`
+	UserId       int       `json:"userId" gorm:"column:userId"`
 }
 
 func (Plan) TableName() string {
 	return "plan"
+}
+
+type User struct {
+	Id           int    `json:"id" gorm:"column:id"`
+	Token        string `json:"token" gorm:"column:token"`
+	BnApiKey     string `json:"bnApiKey" gorm:"column:bnApiKey"`
+	BnApiSecret  string `json:"bnApiSecret" gorm:"column:bnApiSecret"`
+	MiaoNoticeId string `json:"miaoNoticeId" gorm:"column:miaoNoticeId"`
+}
+
+func (User) TableName() string {
+	return "user"
 }

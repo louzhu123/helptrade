@@ -3,15 +3,14 @@ package dao
 import (
 	"helptrade/global"
 
-	"github.com/adshao/go-binance/v2/futures"
 	"gorm.io/gorm"
 )
 
-func UpdateCombineOrderComment(id int64, comment string) {
-	global.DB.Table("combine_order").Where("id", id).Update("comment", comment)
+func UpdateCombineOrderComment(userId, id int64, comment string) {
+	global.DB.Table("combine_order").Where("userId", userId).Where("id", id).Update("comment", comment)
 }
 
-func QueryCombineOrder(req global.GetCombineOrderListReq) ([]CombineOrder, error) {
+func QueryCombineOrder(userId int, req global.GetCombineOrderListReq) ([]CombineOrder, error) {
 	where := global.DB.Model(&CombineOrder{})
 	if req.OpenSide == "BUY" {
 		where.Where("positionSide", "LONG")
@@ -35,6 +34,8 @@ func QueryCombineOrder(req global.GetCombineOrderListReq) ([]CombineOrder, error
 	if req.AmountMin != 0 {
 		where.Where("maxCumQuote >= ?", req.AmountMin)
 	}
+
+	where.Where("userId", userId)
 
 	var list []CombineOrder
 	err := where.Order("startTime desc").Find(&list).Error
@@ -74,11 +75,39 @@ func GetAllOrder() ([]Order, error) {
 	return list, err
 }
 
+func GetAllOrderByUserId(userId int) ([]Order, error) {
+	list := make([]Order, 0)
+	err := global.DB.Model(Order{}).Where("userId", userId).Order("time asc").Find(&list).Error
+	return list, err
+}
+
 func GetAllAccountTrade() ([]AccountTrade, error) {
 	list := make([]AccountTrade, 0)
 	err := global.DB.Model(AccountTrade{}).
 		// Order("time asc").Find(&list).Error
-		Select("orderId,min(time) as time,sum(commission) as commission,sum(qty) as qty,sum(quoteQty) as quoteQty,sum(realizedPnl) as realizedPnl,avg(price) as price,MIN(symbol) as symbol,MIN(side) as side,MIN(positionSide) as positionSide").
+		Select("min(userId) as userId,orderId,min(time) as time,sum(commission) as commission,sum(qty) as qty,sum(quoteQty) as quoteQty,sum(realizedPnl) as realizedPnl,avg(price) as price,MIN(symbol) as symbol,MIN(side) as side,MIN(positionSide) as positionSide").
+		Group("orderId").Order("time asc").Find(&list).Error
+	return list, err
+}
+
+func GetLastestAccountTradeByUserId(userId int) (AccountTrade, error) {
+	var data AccountTrade
+	err := global.DB.Model(AccountTrade{}).Where("userId", userId).Order("time desc").First(&data).Error
+	return data, err
+}
+
+func GetLastestOrderByUserId(userId int) (Order, error) {
+	var data Order
+	err := global.DB.Model(Order{}).Where("userId", userId).Order("time desc").First(&data).Error
+	return data, err
+}
+
+func GetAccountTradeByUserId(userId int) ([]AccountTrade, error) {
+	list := make([]AccountTrade, 0)
+	err := global.DB.Model(AccountTrade{}).
+		// Order("time asc").Find(&list).Error
+		Where("userId", userId).
+		Select("min(userId) as userId,orderId,min(time) as time,sum(commission) as commission,sum(qty) as qty,sum(quoteQty) as quoteQty,sum(realizedPnl) as realizedPnl,avg(price) as price,MIN(symbol) as symbol,MIN(side) as side,MIN(positionSide) as positionSide").
 		Group("orderId").Order("time asc").Find(&list).Error
 	return list, err
 }
@@ -103,7 +132,7 @@ func UpsertCombineOrder(list []CombineOrder) {
 	}
 }
 
-func UpsertAccountTrade(data *futures.AccountTrade) {
+func UpsertAccountTrade(data AccountTrade) {
 	m := AccountTrade{}
 	where := global.DB.Model(AccountTrade{}).Where("id", data.ID)
 	err := where.First(&m).Error
@@ -112,9 +141,9 @@ func UpsertAccountTrade(data *futures.AccountTrade) {
 	}
 }
 
-func UpsertOrder(data *futures.Order) {
+func UpsertOrder(data Order) {
 	m := Order{}
-	where := global.DB.Model(Order{}).Where("orderId", data.OrderID)
+	where := global.DB.Model(Order{}).Where("orderId", data.OrderId)
 	err := where.First(&m).Error
 	if err == gorm.ErrRecordNotFound {
 		global.DB.Model(Order{}).Create(data)
@@ -147,4 +176,16 @@ func DelPlan(id int64) error {
 
 func DonePlan(id int64) error {
 	return global.DB.Model(Plan{}).Where("id", id).Update("status", 1).Error
+}
+
+func GetAllUser() ([]User, error) {
+	list := make([]User, 0)
+	err := global.DB.Model(User{}).Find(&list).Error
+	return list, err
+}
+
+func GetUserByToken(token string) (User, error) {
+	user := User{}
+	err := global.DB.Model(User{}).Where("token", token).First(&user).Error
+	return user, err
 }

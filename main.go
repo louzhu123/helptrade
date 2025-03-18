@@ -4,9 +4,9 @@ import (
 	"fmt"
 	Config "helptrade/config"
 	"helptrade/controller"
+	"helptrade/dao"
 	"helptrade/global"
 	"helptrade/service"
-	"log"
 	"net/http"
 	"time"
 
@@ -43,7 +43,7 @@ func CORSMiddleware() gin.HandlerFunc {
 		// 设置允许的请求方法
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
 		// 设置允许的请求头
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With,token")
 		// 设置允许的响应头
 		c.Writer.Header().Set("Access-Control-Expose-Headers", "Content-Length")
 		// 设置允许的请求凭证
@@ -60,33 +60,56 @@ func CORSMiddleware() gin.HandlerFunc {
 	}
 }
 
+func AuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		token := c.GetHeader("token")
+		if token == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "未提供认证令牌"})
+			return
+		}
+
+		userInfo, err := dao.GetUserByToken(token) // todo 改成redis或者jwttoken
+		fmt.Println("userInfo", userInfo)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "未提供认证令牌"})
+			return
+		}
+		c.Set("user", userInfo)
+
+		// 继续处理后续请求
+		c.Next()
+	}
+}
 func main() {
-	// service.FetchAndSaveAllAccountTrade()
-	// list := service.CombineAccountTrade()
-	// dao.SaveCombineOrder(list)
-	// return
-	// go func() {
-	// 	for {
-	// 		service.FetchAndCombineOrder()
-	// 		time.Sleep(15 * time.Minute)
-	// 	}
-	// }()
+
 	go func() {
 		for {
-			log.Println("doPlan")
-			service.DoPlan()
-			time.Sleep(5 * time.Second)
+			service.FetchAndCombineAccountTrade()
+			time.Sleep(30 * time.Minute)
 		}
 	}()
+	// go func() {
+	// 	for {
+	// 		log.Println("doPlan")
+	// 		service.DoPlan()
+	// 		time.Sleep(5 * time.Second)
+	// 	}
+	// }()
 
 	r := gin.Default()
-	r.Use(CORSMiddleware())
-	r.GET("/getCombineOrderList", controller.GetCombineOrderList)
-	r.POST("/editCommnet", controller.EditCommnet)
 
-	r.GET("/getPlanList", controller.GetPlanList)
-	r.POST("/savePlan", controller.SavePlan)
-	r.POST("/delPlan", controller.DelPlan)
+	r.Static("/static", "./public")
+
+	api := r.Group("/api")
+	api.Use(CORSMiddleware()).Use(AuthMiddleware())
+	{
+		api.GET("/getCombineOrderList", controller.GetCombineOrderList)
+		api.POST("/editCommnet", controller.EditCommnet)
+
+		api.GET("/getPlanList", controller.GetPlanList)
+		api.POST("/savePlan", controller.SavePlan)
+		api.POST("/delPlan", controller.DelPlan)
+	}
 
 	r.Run()
 }
