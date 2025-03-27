@@ -113,3 +113,17 @@ type User struct {
 func (User) TableName() string {
 	return "user"
 }
+
+type CombineOrderStatis struct {
+	TotalCommission       int `gorm:"column:totalCommission"`
+	TotalPnl              int `gorm:"column:totalPnl"` // 净盈亏
+	AvgTakeTime           int `gorm:"column:avgTakeTime"`
+	AvgFirstOpenCumQuote  int `gorm:"column:avgFirstOpenCumQuote"`
+	AvgMaxCumQuote        int `gorm:"column:avgMaxCumQuote"`
+	WinTimes              int `gorm:"column:winTimes"`
+	LossTimes             int `gorm:"column:lossTimes"`
+	AvgWin                int `gorm:"column:avgWin"`
+	AvgLoss               int `gorm:"column:avgLoss"`
+	AvgWinWithCommission  int `gorm:"column:avgWinWithCommission"`
+	AvgLossWithCommission int `gorm:"column:avgLossWithCommission"`
+}

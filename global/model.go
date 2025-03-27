@@ -12,6 +12,8 @@ type GetCombineOrderListReq struct {
 	DateMax   int64  `json:"dateMax" form:"dateMax"`
 	AmountMin int64  `json:"amountMin" form:"amountMin"`
 	AmountMax int64  `json:"amountMax" form:"amountMax"`
+	Page      int64  `json:"page" form:"page"`
+	PageSize  int64  `json:"pageSize" form:"pageSize"`
 }
 
 type GetPlanListReq struct {

@@ -125,6 +125,69 @@
         .float-button:hover {
             background-color: #0056b3;
         }
+
+        /* 基础表格样式 */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        /* 分页容器样式 */
+        .pagination {
+            margin-top: 20px;
+            display: flex;
+            gap: 5px;
+        }
+
+        /* 分页按钮样式 */
+        .page-btn {
+            padding: 5px 10px;
+            border: 1px solid #ddd;
+            background: white;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+
+        .page-btn:hover:not(.active) {
+            background-color: #f0f0f0;
+        }
+
+        .active {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+
+        /* 禁用状态 */
+        .disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* 页面信息样式 */
+        .page-info {
+            margin-left: 15px;
+            align-self: center;
+        }
+
+        /* 每页显示数量选择器 */
+        .page-size-select {
+            margin-bottom: 10px;
+            padding: 5px;
+        }
+    </style>
     </style>
 </head>
 
@@ -164,6 +227,12 @@
         </div>
 
         <div class="table-responsive">
+            <select class="page-size-select" onchange="changePageSize(this)">
+                <option value="5">5 每页</option>
+                <option value="10" selected>10 每页</option>
+                <option value="20">20 每页</option>
+            </select>
+
             <table class="table table-hover align-middle" id="transactionTable">
                 <thead class="table-header">
                     <tr>
@@ -186,6 +255,8 @@
                     <!-- 数据将通过JS动态加载 -->
                 </tbody>
             </table>
+
+            <div class="pagination" id="pagination"></div>
         </div>
     </div>
 
@@ -221,8 +292,10 @@
                 symbol: filterParams.symbol ? filterParams.symbol : "ALL",
                 dateMin: filterParams.dateMin ? filterParams.dateMin : 0,
                 dateMax: filterParams.dateMax ? filterParams.dateMax : 0,
-                amountMin: filterParams.amountMin ? filterParams.amountMin : 0, 
-                amountMax: filterParams.amountMax ? filterParams.amountMax : 0, 
+                amountMin: filterParams.amountMin ? filterParams.amountMin : 0,
+                amountMax: filterParams.amountMax ? filterParams.amountMax : 0,
+                page: filterParams.page ? filterParams.page : 1,
+                pageSize: filterParams.pageSize ? filterParams.pageSize : 20
             });
             const url = `${host}/getCombineOrderList?${params}`
             try {
@@ -233,7 +306,7 @@
                     headers: {
                         'Content-Type': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest',
-                        'token':  token,
+                        'token': token,
                     },
 
                 });
@@ -359,7 +432,7 @@
             let totalLossPersent = 0
             let avgWinLossRate = 0
             let avgLoss = 0
-            
+
 
             transactions.forEach(element => {
                 count += 1
@@ -369,15 +442,15 @@
                 totalFirstOpenCumQuote += element.firstOpenCumQuote
                 totalMaxCumQuote += element.maxCumQuote
                 if (element.pnl > 0) {
-                     win += element.pnl
-                     winTimes += 1
+                    win += element.pnl
+                    winTimes += 1
                 }
                 if (element.pnl < 0) {
                     loss += element.pnl
                     lossTimes += 1
                 }
                 let persent = getDiffPercent(element)
-                if (persent >  0) totalWinPersent += Number(getDiffPercent(element))
+                if (persent > 0) totalWinPersent += Number(getDiffPercent(element))
                 if (persent < 0) totalLossPersent += Number(getDiffPercent(element))
             });
 
@@ -388,7 +461,7 @@
             avgTakeTime = totalTakeTime / count / 1000 / 60
             avgFirstOpenCumQuote = totalFirstOpenCumQuote / count
             avgMaxCumQuote = totalMaxCumQuote / count
-            
+
 
             tbody.innerHTML = `
                 <tr>
@@ -402,7 +475,7 @@
                     <td>${avgTakeTime.toFixed(0)}分钟</td>
                     <td>总笔数:${transactions.length}<br>${totalCommission.toFixed(2)}</td>
                     <td>净盈亏:${totalPnl.toFixed(2)} <br> 总盈利:${win.toFixed(0)} <br> 总亏损:${loss.toFixed(0)} <br> 平均亏损:${avgLoss.toFixed(0)} </td>
-                    <td>胜率:${winRate.toFixed(2)} <br> 平均盈亏比:${avgWinLossRate.toFixed(2)} <br> 期望值:${(winRate*avgWinLossRate -(1-winRate)).toFixed(3)}</td>
+                    <td>胜率:${winRate.toFixed(2)} <br> 平均盈亏比:${avgWinLossRate.toFixed(2)} <br> 期望值:${(winRate * avgWinLossRate - (1 - winRate)).toFixed(3)}</td>
                     <td></td>
                     <td></td>
                     <td></td>
@@ -463,7 +536,7 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'token':token
+                            'token': token
                         },
                         body: JSON.stringify({ id: currentTransaction.id, comment: newReview })
                     });
@@ -551,7 +624,7 @@
             }
         });
 
-        async function filterTable() {
+        async function filterTable(pageParam) {
             const amountMin = parseFloat(document.getElementById('amountMin').value) || 0;
             const amountMax = parseFloat(document.getElementById('amountMax').value) || 0;
             const dateMin = new Date(document.getElementById('dateMin').value).getTime() || 0;
@@ -564,7 +637,9 @@
                 dateMin: dateMin,
                 dateMax: dateMax,
                 amountMin: amountMin,
-                amountMax : amountMax
+                amountMax: amountMax,
+                page: pageParam.page,
+                pageSize: pageParam.pageSize
             }
             const transactions = await fetchTransactions(params);
             await renderTable(transactions);
@@ -577,6 +652,100 @@
             await renderTable(transactions);
             initEdit();
         })();
+    </script>
+
+
+    <script>
+        let currentPage = 1;
+        let pageSize = 10; // 默认每页显示数量
+
+        // // 初始化分页
+        async function initializePagination() {
+            // updateTableDisplay(rows);
+
+            filterTable({page:currentPage,pageSize:pageSize})
+
+            let totalPages = 10
+            createPaginationControls(totalPages);
+      
+        }
+
+        // // 更新表格显示
+        // function updateTableDisplay(rows) {
+        //     const start = (currentPage - 1) * pageSize;
+        //     const end = start + pageSize;
+
+        //     Array.from(rows).forEach((row, index) => {
+        //         row.style.display = (index >= start && index < end) ? '' : 'none';
+        //     });
+        // }
+
+
+        // // 创建分页控件
+        function createPaginationControls(totalPages) {
+            const container = document.getElementById('pagination');
+            container.innerHTML = '';
+
+            // 上一页按钮
+            const prevButton = createButton('«', currentPage === 1, () => changePage(-1));
+            container.appendChild(prevButton);
+
+            // 生成页码按钮
+            for (let i = 1; i <= totalPages; i++) {
+                const btn = createButton(i, false, () => goToPage(i));
+                if (i === currentPage) btn.classList.add('active');
+                container.appendChild(btn);
+            }
+
+            // 下一页按钮
+            const nextButton = createButton('»', currentPage === totalPages, () => changePage(1));
+            container.appendChild(nextButton);
+
+            // 添加页面信息
+            const info = document.createElement('span');
+            info.className = 'page-info';
+            info.textContent = `第 ${currentPage} 页 / 共 ${totalPages} 页`;
+            container.appendChild(info);
+        }
+
+        // // 创建按钮通用函数
+        function createButton(text, disabled, onClick) {
+            const btn = document.createElement('button');
+            btn.className = 'page-btn' + (disabled ? ' disabled' : '');
+            btn.textContent = text;
+            if (!disabled) btn.onclick = onClick;
+            return btn;
+        }
+
+        // 改变页码
+        function changePage(delta) {
+            currentPage += delta;
+            initializePagination();
+        }
+
+        // 跳转到指定页
+        function goToPage(page) {
+            currentPage = page;
+            initializePagination();
+        }
+
+        // 修改每页显示数量
+        function changePageSize(select) {
+            pageSize = parseInt(select.value);
+            currentPage = 1; // 重置到第一页
+            initializePagination();
+        }
+
+        // // 页面加载后初始化
+        window.onload = initializePagination;
+
+        // 动态添加数据的示例（如果需要）
+        // function addTableRow(data) {
+        //     const tbody = document.querySelector('#dataTable tbody');
+        //     const row = tbody.insertRow();
+        //     // 添加单元格...
+        //     initializePagination(); // 添加数据后更新分页
+        // }
     </script>
 </body>
 

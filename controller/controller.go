@@ -26,6 +26,23 @@ func GetCombineOrderList(c *gin.Context) {
 	})
 }
 
+func GetCombineOrderStatis(c *gin.Context) {
+
+	var req global.GetCombineOrderListReq
+	if err := c.ShouldBindQuery(&req); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+
+	userInfo, _ := c.Get("user")
+	user := userInfo.(dao.User)
+	list, _ := dao.GetCombineOrderStatis(user.Id, req)
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": list,
+	})
+}
+
 func EditCommnet(c *gin.Context) {
 	var req global.EditCommentReq
 	if err := c.ShouldBindJSON(&req); err != nil {

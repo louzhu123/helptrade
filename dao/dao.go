@@ -34,6 +34,10 @@ func QueryCombineOrder(userId int, req global.GetCombineOrderListReq) ([]Combine
 	if req.AmountMin != 0 {
 		where.Where("maxCumQuote >= ?", req.AmountMin)
 	}
+	if req.Page != 0 {
+		offset := (req.Page - 1) * req.PageSize
+		where.Offset(int(offset)).Limit(int(req.PageSize))
+	}
 
 	where.Where("userId", userId)
 
@@ -43,6 +47,53 @@ func QueryCombineOrder(userId int, req global.GetCombineOrderListReq) ([]Combine
 		return list, err
 	}
 	return list, nil
+}
+
+func GetCombineOrderStatis(userId int, req global.GetCombineOrderListReq) (CombineOrderStatis, error) {
+	where := global.DB.Model(&CombineOrder{})
+	if req.OpenSide == "BUY" {
+		where.Where("positionSide", "LONG")
+	} else if req.OpenSide == "SELL" {
+		where.Where("positionSide", "SHORT")
+	}
+
+	if req.Symbol != "ALL" && req.Symbol != "" {
+		where.Where("symbol", req.Symbol)
+	}
+
+	if req.DateMax != 0 {
+		where.Where("startTime <= ?", req.DateMax)
+	}
+	if req.DateMin != 0 {
+		where.Where("startTIme >= ?", req.DateMin)
+	}
+	if req.AmountMax != 0 {
+		where.Where("maxCumQuote <= ?", req.AmountMax)
+	}
+	if req.AmountMin != 0 {
+		where.Where("maxCumQuote >= ?", req.AmountMin)
+	}
+
+	where.Where("userId", userId)
+
+	var data CombineOrderStatis
+	err := where.Select("sum(commission) as totalCommission").
+		Select("sum(pnl) as totalPnl").
+		Select("avg(endTime - startTime) as avgTakeTime").
+		Select("avg(firstOpenCumQuote) as avgFirstOpenCumQuote").
+		Select("avg(maxCumQuote) as avgMaxCumQuote").
+		Select("avg(IF(pnl > 0, pnl, NULL)) as avgWin").
+		Select("avg(IF(pnl < 0, pnl, NULL)) as avgLoss").
+		Select("avg(IF((pnl+commission) > 0, (pnl+commission), NULL)) as avgWinWithCommission").
+		Select("avg(IF((pnl+commission) < 0, (pnl+commission), NULL)) as avgLossWithCommission").
+		Select("count(IF((pnl+commission) > 0, (pnl+commission), NULL)) as winTimes").
+		Select("count(IF((pnl+commission) < 0, (pnl+commission), NULL)) as lossTimes").
+		First(&data).Error
+
+	if err != nil {
+		return data, err
+	}
+	return data, nil
 }
 
 func GetTotalCommissionByOrderId(orderId int64) float64 {

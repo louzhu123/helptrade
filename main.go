@@ -6,9 +6,7 @@ import (
 	"helptrade/controller"
 	"helptrade/dao"
 	"helptrade/global"
-	"helptrade/service"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-ini/ini"
@@ -82,19 +80,20 @@ func AuthMiddleware() gin.HandlerFunc {
 }
 func main() {
 
-	go func() {
-		for {
-			service.FetchAndCombineAccountTrade()
-			time.Sleep(30 * time.Minute)
-		}
-	}()
+	// go func() {
+	// 	for {
+	// 		service.FetchAndCombineAccountTrade()
+	// 		time.Sleep(60 * time.Minute)
+	// 	}
+	// }()
 
-	go func() {
-		for {
-			service.DoPlan()
-			time.Sleep(5 * time.Second)
-		}
-	}()
+	// go func() {
+	// 	for {
+	// 		fmt.Println("doPlan")
+	// 		service.DoPlan()
+	// 		time.Sleep(5 * time.Second)
+	// 	}
+	// }()
 
 	r := gin.Default()
 
