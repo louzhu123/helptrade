@@ -22,7 +22,7 @@ func GetCombineOrderList(c *gin.Context) {
 	list, _ := dao.QueryCombineOrder(user.Id, req)
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": list,
+		"data": list,
 	})
 }
 
@@ -36,10 +36,10 @@ func GetCombineOrderStatis(c *gin.Context) {
 
 	userInfo, _ := c.Get("user")
 	user := userInfo.(dao.User)
-	list, _ := dao.GetCombineOrderStatis(user.Id, req)
+	data, _ := dao.GetCombineOrderStatis(user.Id, req)
 
 	c.JSON(http.StatusOK, gin.H{
-		"message": list,
+		"data": data,
 	})
 }
 

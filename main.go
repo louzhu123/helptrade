@@ -104,6 +104,7 @@ func main() {
 	{
 		api.GET("/getCombineOrderList", controller.GetCombineOrderList)
 		api.POST("/editCommnet", controller.EditCommnet)
+		api.GET("/getCombineOrderStatis", controller.GetCombineOrderStatis)
 
 		api.GET("/getPlanList", controller.GetPlanList)
 		api.POST("/savePlan", controller.SavePlan)

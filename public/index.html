@@ -283,8 +283,141 @@
     <script src="./bootstrap.bundle.min.js"></script>
 
     <script>
+        // let currentPage = 1;
+        // let pageSize = 10; // 默认每页显示数量
 
-        const host = "http://127.0.0.1:8080/api"
+        // // 初始化分页
+        async function initializePagination() {
+            filterTable({page:currentPage,pageSize:pageSize})
+            createPaginationControls(totalPages);
+        }
+
+        // // 更新表格显示
+        // function updateTableDisplay(rows) {
+        //     const start = (currentPage - 1) * pageSize;
+        //     const end = start + pageSize;
+
+        //     Array.from(rows).forEach((row, index) => {
+        //         row.style.display = (index >= start && index < end) ? '' : 'none';
+        //     });
+        // }
+
+
+        // // 创建分页控件
+        function createPaginationControls(totalPages) {
+            const container = document.getElementById('pagination');
+            container.innerHTML = '';
+
+            // 上一页按钮
+            const prevButton = createButton('«', currentPage === 1, () => changePage(-1));
+            container.appendChild(prevButton);
+
+            // 生成页码按钮
+            for (let i = 1; i <= totalPages; i++) {
+                const btn = createButton(i, false, () => goToPage(i));
+                if (i === currentPage) btn.classList.add('active');
+                container.appendChild(btn);
+            }
+
+            // 下一页按钮
+            const nextButton = createButton('»', currentPage === totalPages, () => changePage(1));
+            container.appendChild(nextButton);
+
+            // 添加页面信息
+            const info = document.createElement('span');
+            info.className = 'page-info';
+            info.textContent = `第 ${currentPage} 页 / 共 ${totalPages} 页`;
+            container.appendChild(info);
+        }
+
+        // // 创建按钮通用函数
+        function createButton(text, disabled, onClick) {
+            const btn = document.createElement('button');
+            btn.className = 'page-btn' + (disabled ? ' disabled' : '');
+            btn.textContent = text;
+            if (!disabled) btn.onclick = onClick;
+            return btn;
+        }
+
+        // 改变页码
+        function changePage(delta) {
+            currentPage += delta;
+            initializePagination();
+        }
+
+        // 跳转到指定页
+        function goToPage(page) {
+            currentPage = page;
+            initializePagination();
+        }
+
+        // 修改每页显示数量
+        function changePageSize(select) {
+            pageSize = parseInt(select.value);
+            currentPage = 1; // 重置到第一页
+            initializePagination();
+        }
+
+        // // 页面加载后初始化
+        // window.onload = initializePagination;
+
+        // 动态添加数据的示例（如果需要）
+        // function addTableRow(data) {
+        //     const tbody = document.querySelector('#dataTable tbody');
+        //     const row = tbody.insertRow();
+        //     // 添加单元格...
+        //     initializePagination(); // 添加数据后更新分页
+        // }
+    </script>
+
+    <script>
+
+        const host = "/api"
+
+        async function getCombineOrderStatis(filterParams) {
+            const params = new URLSearchParams({
+                openSide: filterParams.openSide ? filterParams.openSide : "ALL",
+                symbol: filterParams.symbol ? filterParams.symbol : "ALL",
+                dateMin: filterParams.dateMin ? filterParams.dateMin : 0,
+                dateMax: filterParams.dateMax ? filterParams.dateMax : 0,
+                amountMin: filterParams.amountMin ? filterParams.amountMin : 0,
+                amountMax: filterParams.amountMax ? filterParams.amountMax : 0,
+            });
+            url = `${host}/getCombineOrderStatis?${params}`
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const token = params.get('token')
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'token': token,
+                    },
+
+                });
+
+                // 处理HTTP错误状态
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `HTTP错误! 状态码: ${response.status}`);
+                }
+
+                // 解析JSON数据
+                const data = await response.json();
+
+                // 转换数据格式（根据实际API响应结构调整）
+                console.log("data",data)
+                // return data.data.map(item => ({
+
+                // }))
+            } catch (error) {
+                console.error('获取交易记录失败:', error);
+                // 显示错误提示（可根据需要添加UI提示）
+                alert(`数据加载失败: ${error.message}`);
+                return []; // 返回空数组保证页面正常渲染
+            }
+        }
 
         async function fetchTransactions(filterParams) {
             const params = new URLSearchParams({
@@ -321,7 +454,7 @@
                 const data = await response.json();
 
                 // 转换数据格式（根据实际API响应结构调整）
-                return data.message.map(item => ({
+                return data.data.map(item => ({
                     id: item.id,
                     date: item.startTime,
                     symbol: item.symbol,
@@ -345,6 +478,7 @@
                 alert(`数据加载失败: ${error.message}`);
                 return []; // 返回空数组保证页面正常渲染
             }
+
         }
 
         function getBsHref(transaction) {
@@ -642,111 +776,27 @@
                 pageSize: pageParam.pageSize
             }
             const transactions = await fetchTransactions(params);
+            const statis = await getCombineOrderStatis(params);
             await renderTable(transactions);
             initEdit();
         }
 
+        let currentPage = 1;
+        let pageSize = 10; // 默认每页显示数量
+        let totalPages = 10; // todo 根据返回
+
         // 初始化
         (async function init() {
-            const transactions = await fetchTransactions({});
-            await renderTable(transactions);
-            initEdit();
+            // const transactions = await fetchTransactions({});
+            // await renderTable(transactions);
+            // initEdit();
+            filterTable({})
+            createPaginationControls(totalPages);
         })();
     </script>
 
 
-    <script>
-        let currentPage = 1;
-        let pageSize = 10; // 默认每页显示数量
-
-        // // 初始化分页
-        async function initializePagination() {
-            // updateTableDisplay(rows);
-
-            filterTable({page:currentPage,pageSize:pageSize})
-
-            let totalPages = 10
-            createPaginationControls(totalPages);
-      
-        }
-
-        // // 更新表格显示
-        // function updateTableDisplay(rows) {
-        //     const start = (currentPage - 1) * pageSize;
-        //     const end = start + pageSize;
-
-        //     Array.from(rows).forEach((row, index) => {
-        //         row.style.display = (index >= start && index < end) ? '' : 'none';
-        //     });
-        // }
-
-
-        // // 创建分页控件
-        function createPaginationControls(totalPages) {
-            const container = document.getElementById('pagination');
-            container.innerHTML = '';
-
-            // 上一页按钮
-            const prevButton = createButton('«', currentPage === 1, () => changePage(-1));
-            container.appendChild(prevButton);
-
-            // 生成页码按钮
-            for (let i = 1; i <= totalPages; i++) {
-                const btn = createButton(i, false, () => goToPage(i));
-                if (i === currentPage) btn.classList.add('active');
-                container.appendChild(btn);
-            }
-
-            // 下一页按钮
-            const nextButton = createButton('»', currentPage === totalPages, () => changePage(1));
-            container.appendChild(nextButton);
-
-            // 添加页面信息
-            const info = document.createElement('span');
-            info.className = 'page-info';
-            info.textContent = `第 ${currentPage} 页 / 共 ${totalPages} 页`;
-            container.appendChild(info);
-        }
-
-        // // 创建按钮通用函数
-        function createButton(text, disabled, onClick) {
-            const btn = document.createElement('button');
-            btn.className = 'page-btn' + (disabled ? ' disabled' : '');
-            btn.textContent = text;
-            if (!disabled) btn.onclick = onClick;
-            return btn;
-        }
-
-        // 改变页码
-        function changePage(delta) {
-            currentPage += delta;
-            initializePagination();
-        }
-
-        // 跳转到指定页
-        function goToPage(page) {
-            currentPage = page;
-            initializePagination();
-        }
-
-        // 修改每页显示数量
-        function changePageSize(select) {
-            pageSize = parseInt(select.value);
-            currentPage = 1; // 重置到第一页
-            initializePagination();
-        }
-
-        // // 页面加载后初始化
-        window.onload = initializePagination;
-
-        // 动态添加数据的示例（如果需要）
-        // function addTableRow(data) {
-        //     const tbody = document.querySelector('#dataTable tbody');
-        //     const row = tbody.insertRow();
-        //     // 添加单元格...
-        //     initializePagination(); // 添加数据后更新分页
-        // }
-    </script>
+   
 </body>
 
 </html>
