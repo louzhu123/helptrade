@@ -51,6 +51,19 @@ func QueryCombineOrder(userId int, req global.GetCombineOrderListReq) ([]Combine
 
 func GetCombineOrderStatis(userId int, req global.GetCombineOrderListReq) (CombineOrderStatis, error) {
 	where := global.DB.Model(&CombineOrder{})
+
+	// Select("sum(commission) as totalCommission").
+	// Select("sum(pnl) as totalPnl")
+	// Select("avg(endTime - startTime) as avgTakeTime").
+	// Select("avg(firstOpenCumQuote) as avgFirstOpenCumQuote").
+	// Select("avg(maxCumQuote) as avgMaxCumQuote").
+	// Select("avg(IF(pnl > 0, pnl, NULL)) as avgWin").
+	// Select("avg(IF(pnl < 0, pnl, NULL)) as avgLoss").
+	// Select("avg(IF((pnl+commission) > 0, (pnl+commission), NULL)) as avgWinWithCommission").
+	// Select("avg(IF((pnl+commission) < 0, (pnl+commission), NULL)) as avgLossWithCommission").
+	// Select("count(IF((pnl+commission) > 0, 1, NULL)) as winTimes").
+	// Select("count(IF((pnl+commission) < 0, 1, NULL)) as lossTimes").
+
 	if req.OpenSide == "BUY" {
 		where.Where("positionSide", "LONG")
 	} else if req.OpenSide == "SELL" {
@@ -77,18 +90,23 @@ func GetCombineOrderStatis(userId int, req global.GetCombineOrderListReq) (Combi
 	where.Where("userId", userId)
 
 	var data CombineOrderStatis
-	err := where.Select("sum(commission) as totalCommission").
-		Select("sum(pnl) as totalPnl").
-		Select("avg(endTime - startTime) as avgTakeTime").
-		Select("avg(firstOpenCumQuote) as avgFirstOpenCumQuote").
-		Select("avg(maxCumQuote) as avgMaxCumQuote").
-		Select("avg(IF(pnl > 0, pnl, NULL)) as avgWin").
-		Select("avg(IF(pnl < 0, pnl, NULL)) as avgLoss").
-		Select("avg(IF((pnl+commission) > 0, (pnl+commission), NULL)) as avgWinWithCommission").
-		Select("avg(IF((pnl+commission) < 0, (pnl+commission), NULL)) as avgLossWithCommission").
-		Select("count(IF((pnl+commission) > 0, (pnl+commission), NULL)) as winTimes").
-		Select("count(IF((pnl+commission) < 0, (pnl+commission), NULL)) as lossTimes").
-		First(&data).Error
+	selectFileds := []string{
+		"sum(commission) as totalCommission",
+		"sum(pnl) as totalPnl",
+		"sum(pnl-commission) as totalPnlWithCommission",
+		"count(IF((pnl-commission) > 0, 1, NULL)) as winTimes",
+		"count(IF((pnl-commission) < 0, 1, NULL)) as lossTimes",
+		"avg(endTime - startTime) as avgTakeTime",
+		"avg(IF((pnl-commission) > 0, pnl-commission, NULL)) as avgWinWithCommission",
+		"avg(IF((pnl-commission) < 0, pnl-commission, NULL)) as avgLossWithCommission",
+		"avg(IF(pnl > 0, pnl, NULL)) as avgWin",
+		"avg(IF(pnl < 0, pnl, NULL)) as avgLoss",
+		"avg(FirstOpenCumQuote) as avgFirstOpenCumQuote",
+		"avg(maxCumQuote) as avgMaxCumQuote",
+	}
+	where = where.Select(selectFileds)
+
+	err := where.First(&data).Error
 
 	if err != nil {
 		return data, err

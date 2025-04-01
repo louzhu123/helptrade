@@ -199,6 +199,7 @@
 
         <!-- 筛选控件 -->
         <div class="filter-container" id="filterContainer">
+            <button onclick="filterTable({})">提交</button>
             <div class="filter-group">
                 <label>最大仓位范围：</label>
                 <input type="number" id="amountMin" placeholder="最小值">
@@ -223,7 +224,6 @@
                 <label>标的：</label>
                 <input type="text" id="textFilter" placeholder="BTCUSDT">
             </div>
-            <button onclick="filterTable()">提交</button>
         </div>
 
         <div class="table-responsive">
@@ -407,10 +407,11 @@
                 const data = await response.json();
 
                 // 转换数据格式（根据实际API响应结构调整）
-                console.log("data",data)
+                // console.log("data",data)
                 // return data.data.map(item => ({
 
                 // }))
+                return data.data
             } catch (error) {
                 console.error('获取交易记录失败:', error);
                 // 显示错误提示（可根据需要添加UI提示）
@@ -544,59 +545,63 @@
         }
 
         // 渲染表格数据
-        async function renderTable(transactions) {
-
+        async function renderTable(transactions,statis) {
+            console.log("statis",statis)
             const tbody = document.getElementById('transactions');
 
-            let count = 0
-            let totalCommission = 0
-            let totalPnl = 0
-            let totalTakeTime = 0
-            let totalFirstOpenCumQuote = 0
-            let totalMaxCumQuote = 0
-            let avgTakeTime = 0
-            let avgFirstOpenCumQuote = 0
-            let avgMaxCumQuote = 0
-            let win = 0
-            let loss = 0
-            let winTimes = 0
-            let lossTimes = 0
-            let winRate = 0
-            let totalWinPersent = 0
-            let totalLossPersent = 0
-            let avgWinLossRate = 0
-            let avgLoss = 0
+            // let count = 0
+            // let totalCommission = 0
+            // let totalPnl = 0
+            // let totalTakeTime = 0
+            // let totalFirstOpenCumQuote = 0
+            // let totalMaxCumQuote = 0
+            // let avgTakeTime = 0
+            // let avgFirstOpenCumQuote = 0
+            // let avgMaxCumQuote = 0
+            // let win = 0
+            // let loss = 0
+            // let winTimes = 0
+            // let lossTimes = 0
+            // let winRate = 0
+            // let totalWinPersent = 0
+            // let totalLossPersent = 0
+            // let avgWinLossRate = 0
+            // let avgLoss = 0
 
 
-            transactions.forEach(element => {
-                count += 1
-                totalCommission += element.commission
-                totalPnl += element.pnl
-                totalTakeTime += element.endTime - element.startTime
-                totalFirstOpenCumQuote += element.firstOpenCumQuote
-                totalMaxCumQuote += element.maxCumQuote
-                if (element.pnl > 0) {
-                    win += element.pnl
-                    winTimes += 1
-                }
-                if (element.pnl < 0) {
-                    loss += element.pnl
-                    lossTimes += 1
-                }
-                let persent = getDiffPercent(element)
-                if (persent > 0) totalWinPersent += Number(getDiffPercent(element))
-                if (persent < 0) totalLossPersent += Number(getDiffPercent(element))
-            });
+            // transactions.forEach(element => {
+            //     count += 1
+            //     totalCommission += element.commission
+            //     totalPnl += element.pnl
+            //     totalTakeTime += element.endTime - element.startTime
+            //     totalFirstOpenCumQuote += element.firstOpenCumQuote
+            //     totalMaxCumQuote += element.maxCumQuote
+            //     if (element.pnl > 0) {
+            //         win += element.pnl
+            //         winTimes += 1
+            //     }
+            //     if (element.pnl < 0) {
+            //         loss += element.pnl
+            //         lossTimes += 1
+            //     }
+            //     let persent = getDiffPercent(element)
+            //     if (persent > 0) totalWinPersent += Number(getDiffPercent(element))
+            //     if (persent < 0) totalLossPersent += Number(getDiffPercent(element))
+            // });
 
-            winRate = winTimes / transactions.length
-            avgWinLossRate = (totalWinPersent / winTimes) / (-1 * totalLossPersent / lossTimes)
-            avgLoss = loss / lossTimes
+            // winRate = winTimes / transactions.length
+            // avgWinLossRate = (totalWinPersent / winTimes) / (-1 * totalLossPersent / lossTimes)
+            // avgLoss = loss / lossTimes
 
-            avgTakeTime = totalTakeTime / count / 1000 / 60
-            avgFirstOpenCumQuote = totalFirstOpenCumQuote / count
-            avgMaxCumQuote = totalMaxCumQuote / count
+            // avgTakeTime = totalTakeTime / count / 1000 / 60
+            // avgFirstOpenCumQuote = totalFirstOpenCumQuote / count
+            // avgMaxCumQuote = totalMaxCumQuote / count
 
+            let winRate = statis.winTimes / (statis.winTimes + statis.lossTimes)
+            let avgWinLossRate = statis.avgWinWithCommission / statis.avgLossWithCommission * -1
+            let expect = (winRate * avgWinLossRate - (1 - winRate)).toFixed(3)
 
+            // <br> 总盈利:${win.toFixed(0)} <br> 总亏损:${loss.toFixed(0)} <br> 平均亏损:${avgLoss.toFixed(0)}
             tbody.innerHTML = `
                 <tr>
                     <td>总计</td>
@@ -604,12 +609,12 @@
                     <td></td>
                     <td></td>
                     <td></td>
-                    <td>${avgFirstOpenCumQuote.toFixed(0)}</td>
-                    <td>${avgMaxCumQuote.toFixed(0)}</td>
-                    <td>${avgTakeTime.toFixed(0)}分钟</td>
-                    <td>总笔数:${transactions.length}<br>${totalCommission.toFixed(2)}</td>
-                    <td>净盈亏:${totalPnl.toFixed(2)} <br> 总盈利:${win.toFixed(0)} <br> 总亏损:${loss.toFixed(0)} <br> 平均亏损:${avgLoss.toFixed(0)} </td>
-                    <td>胜率:${winRate.toFixed(2)} <br> 平均盈亏比:${avgWinLossRate.toFixed(2)} <br> 期望值:${(winRate * avgWinLossRate - (1 - winRate)).toFixed(3)}</td>
+                    <td>${statis.avgFirstOpenCumQuote.toFixed(0)}</td>
+                    <td>${statis.avgMaxCumQuote.toFixed(0)}</td>
+                    <td>${statis.avgTakeTime.toFixed(0)}分钟</td>
+                    <td>总笔数:${statis.winTimes + statis.lossTimes}<br> 手续费:${statis.totalCommission.toFixed(2)}</td>
+                    <td>净盈亏:${statis.totalPnlWithCommission.toFixed(2)}</td>
+                    <td>胜率:${winRate.toFixed(2)} <br> 平均盈亏比:${avgWinLossRate.toFixed(2)} <br> 期望值:${expect}</td>
                     <td></td>
                     <td></td>
                     <td></td>
@@ -777,7 +782,7 @@
             }
             const transactions = await fetchTransactions(params);
             const statis = await getCombineOrderStatis(params);
-            await renderTable(transactions);
+            await renderTable(transactions,statis);
             initEdit();
         }
 

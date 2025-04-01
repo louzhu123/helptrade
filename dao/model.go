@@ -115,15 +115,16 @@ func (User) TableName() string {
 }
 
 type CombineOrderStatis struct {
-	TotalCommission       int `gorm:"column:totalCommission" json:"totalCommission"`
-	TotalPnl              int `gorm:"column:totalPnl" json:"totalPnl"` // 净盈亏
-	AvgTakeTime           int `gorm:"column:avgTakeTime" json:"avgTakeTime"`
-	AvgFirstOpenCumQuote  int `gorm:"column:avgFirstOpenCumQuote" json:"avgFirstOpenCumQuote"`
-	AvgMaxCumQuote        int `gorm:"column:avgMaxCumQuote" json:"avgFirstOpenCumQuote"`
-	WinTimes              int `gorm:"column:winTimes" json:"winTimes"`
-	LossTimes             int `gorm:"column:lossTimes" json:"lossTimes"`
-	AvgWin                int `gorm:"column:avgWin" json:"avgWin"`
-	AvgLoss               int `gorm:"column:avgLoss" json:"avgLoss"`
-	AvgWinWithCommission  int `gorm:"column:avgWinWithCommission" json:"avgWinWithCommission"`
-	AvgLossWithCommission int `gorm:"column:avgLossWithCommission" json:"avgLossWithCommission"`
+	TotalCommission        float64 `gorm:"column:totalCommission" json:"totalCommission"`
+	TotalPnl               float64 `gorm:"column:totalPnl" json:"totalPnl"` // 净盈亏
+	AvgTakeTime            float64 `gorm:"column:avgTakeTime" json:"avgTakeTime"`
+	AvgFirstOpenCumQuote   float64 `gorm:"column:avgFirstOpenCumQuote" json:"avgFirstOpenCumQuote"`
+	AvgMaxCumQuote         float64 `gorm:"column:avgMaxCumQuote" json:"avgMaxCumQuote"`
+	WinTimes               int     `gorm:"column:winTimes" json:"winTimes"`
+	LossTimes              int     `gorm:"column:lossTimes" json:"lossTimes"`
+	AvgWin                 float64 `gorm:"column:avgWin" json:"avgWin"`
+	AvgLoss                float64 `gorm:"column:avgLoss" json:"avgLoss"`
+	AvgWinWithCommission   float64 `gorm:"column:avgWinWithCommission" json:"avgWinWithCommission"`
+	AvgLossWithCommission  float64 `gorm:"column:avgLossWithCommission" json:"avgLossWithCommission"`
+	TotalPnlWithCommission float64 `gorm:"column:totalPnlWithCommission" json:"totalPnlWithCommission"`
 }
