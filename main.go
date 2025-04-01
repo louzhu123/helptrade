@@ -80,12 +80,12 @@ func AuthMiddleware() gin.HandlerFunc {
 }
 func main() {
 
-	// go func() {
-	// 	for {
-	// 		service.FetchAndCombineAccountTrade()
-	// 		time.Sleep(60 * time.Minute)
-	// 	}
-	// }()
+	go func() {
+		for {
+			service.FetchAndCombineAccountTrade()
+			time.Sleep(60 * time.Minute)
+		}
+	}()
 
 	// go func() {
 	// 	for {
