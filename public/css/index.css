@@ -1,0 +1,213 @@
+.editable {
+    cursor: pointer;
+    transition: background-color 0.3s;
+    white-space: nowrap;
+    /* 禁止换行 */
+    overflow: hidden;
+    /* 隐藏超出部分 */
+    text-overflow: ellipsis;
+    /* 超出部分显示省略号 */
+    max-width: 200px;
+    /* 设置最大宽度 */
+}
+
+.editable:hover {
+    background-color: #f8f9fa;
+}
+
+.profit-positive {
+    color: #28a745 !important;
+    ;
+    font-weight: bold;
+}
+
+.profit-negative {
+    color: #dc3545 !important;
+    font-weight: bold;
+}
+
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+}
+
+th,
+td {
+    border: 1px solid #dddddd;
+    padding: 12px;
+    text-align: left;
+}
+
+th {
+    background-color: #f2f2f2;
+    cursor: pointer;
+}
+
+tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.asc::after {
+    content: " ▲";
+}
+
+.desc::after {
+    content: " ▼";
+}
+
+.filter-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 250px;
+    background-color: #ffffff;
+    border: 1px solid #cccccc;
+    border-radius: 5px;
+    padding: 15px;
+    display: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.filter-group {
+    margin-bottom: 10px;
+}
+
+.filter-group label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.filter-group input[type="number"],
+.filter-group input[type="date"],
+.filter-group input[type="text"] {
+    width: 100%;
+    padding: 5px;
+    border: 1px solid #cccccc;
+    border-radius: 3px;
+}
+
+.radio-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.radio-group label {
+    margin-bottom: 5px;
+}
+
+.float-button {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    background-color: #007bff;
+    color: #ffffff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.float-button:hover {
+    background-color: #0056b3;
+}
+
+/* 基础表格样式 */
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 20px 0;
+}
+
+th,
+td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+th {
+    background-color: #f2f2f2;
+}
+
+/* 分页容器样式 */
+.pagination {
+    margin-top: 20px;
+    display: flex;
+    gap: 5px;
+}
+
+/* 分页按钮样式 */
+.page-btn {
+    padding: 5px 10px;
+    border: 1px solid #ddd;
+    background: white;
+    cursor: pointer;
+    border-radius: 3px;
+}
+
+.page-btn:hover:not(.active) {
+    background-color: #f0f0f0;
+}
+
+.active {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+/* 禁用状态 */
+.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* 页面信息样式 */
+.page-info {
+    margin-left: 15px;
+    align-self: center;
+}
+
+/* 每页显示数量选择器 */
+.page-size-select {
+    margin-bottom: 10px;
+    padding: 5px;
+}
+
+
+.tag-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    padding: 10px;
+    border: 1px solid #ccc;
+    min-height: 40px;
+    align-items: center;
+}
+
+.tag {
+    background: #e0e0e0;
+    padding: 5px 10px;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.tag-remove {
+    cursor: pointer;
+    color: #666;
+    font-size: 14px;
+}
+
+.tag-input {
+    border: none;
+    outline: none;
+    padding: 5px;
+    font-size: 16px;
+    min-width: 150px;
+}

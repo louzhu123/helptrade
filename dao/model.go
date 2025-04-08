@@ -77,6 +77,7 @@ type CombineOrder struct {
 	OriginOrders       string  `json:"originOrders" gorm:"column:originOrders"`
 	Commission         float64 `json:"commission" gorm:"column:commission"`
 	UserId             int     `json:"userId" gorm:"column:userId"`
+	Tags               string  `json:"tags" gorm:"column:tags"`
 }
 
 func (CombineOrder) TableName() string {

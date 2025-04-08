@@ -1,13 +1,20 @@
 package dao
 
 import (
+	"fmt"
 	"helptrade/global"
 
 	"gorm.io/gorm"
 )
 
-func UpdateCombineOrderComment(userId, id int64, comment string) {
-	global.DB.Table("combine_order").Where("userId", userId).Where("id", id).Update("comment", comment)
+func UpdateCombineOrderComment(userId, id int64, comment, tags string) {
+	err := global.DB.Table("combine_order").Where("userId", userId).Where("id", id).Updates(
+		map[string]interface{}{
+			"comment": comment,
+			"tags":    tags,
+		},
+	).Error
+	fmt.Println("err", err)
 }
 
 func QueryCombineOrder(userId int, req global.GetCombineOrderListReq) ([]CombineOrder, error) {

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"helptrade/dao"
 	"helptrade/global"
 	"helptrade/service"
@@ -52,8 +53,8 @@ func EditCommnet(c *gin.Context) {
 
 	userInfo, _ := c.Get("user")
 	user := userInfo.(dao.User)
-
-	dao.UpdateCombineOrderComment(int64(user.Id), req.Id, req.Comment)
+	fmt.Println("req", req)
+	dao.UpdateCombineOrderComment(int64(user.Id), req.Id, req.Comment, req.Tags)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "ok",
