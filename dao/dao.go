@@ -17,7 +17,7 @@ func UpdateCombineOrderComment(userId, id int64, comment, tags string) {
 	fmt.Println("err", err)
 }
 
-func QueryCombineOrder(userId int, req global.GetCombineOrderListReq) ([]CombineOrder, error) {
+func QueryCombineOrder(userId int, req global.GetCombineOrderListReq) ([]CombineOrder,int64, error) {
 	where := global.DB.Model(&CombineOrder{})
 	if req.OpenSide == "BUY" {
 		where.Where("positionSide", "LONG")
@@ -41,7 +41,14 @@ func QueryCombineOrder(userId int, req global.GetCombineOrderListReq) ([]Combine
 	if req.AmountMin != 0 {
 		where.Where("maxCumQuote >= ?", req.AmountMin)
 	}
-	if req.Page != 0 {
+	if req.Tags != "" {
+		where.Where("tags LIKE ?", "%"+req.Tags+"%")
+	}
+
+	var count int64
+	where.Count(&count)
+
+	if req.Page != 0 &&  req.PageSize != 0 {
 		offset := (req.Page - 1) * req.PageSize
 		where.Offset(int(offset)).Limit(int(req.PageSize))
 	}
@@ -51,9 +58,9 @@ func QueryCombineOrder(userId int, req global.GetCombineOrderListReq) ([]Combine
 	var list []CombineOrder
 	err := where.Order("startTime desc").Find(&list).Error
 	if err != nil {
-		return list, err
+		return list,count, err
 	}
-	return list, nil
+	return list,count, nil
 }
 
 func GetCombineOrderStatis(userId int, req global.GetCombineOrderListReq) (CombineOrderStatis, error) {
@@ -92,6 +99,9 @@ func GetCombineOrderStatis(userId int, req global.GetCombineOrderListReq) (Combi
 	}
 	if req.AmountMin != 0 {
 		where.Where("maxCumQuote >= ?", req.AmountMin)
+	}
+	if req.Tags != "" {
+		where.Where("tags LIKE ?", "%"+req.Tags+"%")
 	}
 
 	where.Where("userId", userId)

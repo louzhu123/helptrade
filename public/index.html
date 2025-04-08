@@ -19,7 +19,7 @@
 
         <!-- 筛选控件 -->
         <div class="filter-container" id="filterContainer">
-            <button onclick="filterTable({})">提交</button>
+            <button class="btn btn-primary" onclick="filterTable({})">提交</button>
             <div class="filter-group">
                 <label>最大仓位范围：</label>
                 <input type="number" id="amountMin" placeholder="最小值">
@@ -44,13 +44,18 @@
                 <label>标的：</label>
                 <input type="text" id="textFilter" placeholder="BTCUSDT">
             </div>
+            <div class="filter-group">
+                <label>tags：</label>
+                <input type="text" id="tagsFilter">
+            </div>
         </div>
 
         <div class="table-responsive">
             <select class="page-size-select" onchange="changePageSize(this)">
-                <option value="5">5 每页</option>
-                <option value="10" selected>10 每页</option>
+                <option value="5" selected>5 每页</option>
+                <option value="10">10 每页</option>
                 <option value="20">20 每页</option>
+                <option value="9999999">所有</option>
             </select>
 
             <table class="table table-hover align-middle" id="transactionTable">
@@ -67,8 +72,8 @@
                         <th onclick="sortTable(8)">手续费</th>
                         <th onclick="sortTable(9)">盈亏</th>
                         <th onclick="sortTable(10)">幅度</th>
-                        <th>交易复盘</th>
                         <th>tags</th>
+                        <th>交易复盘</th>
                         <th>操作</th>
                     </tr>
                 </thead>
@@ -77,8 +82,13 @@
                 </tbody>
             </table>
 
-            <div class="pagination" id="pagination"></div>
+
         </div>
+        <div class="pagination" id="pagination"></div>
+    </div>
+
+    <div class="loader-container" id="loader">
+        <div class="loader"></div>
     </div>
 
     <!-- 复盘编辑模态框 -->

@@ -1,17 +1,17 @@
 /*
  Navicat Premium Data Transfer
 
- Source Server         : 127.0.0.1
+ Source Server         : 118.26.36.58 ucloud
  Source Server Type    : MySQL
- Source Server Version : 50726 (5.7.26)
- Source Host           : 127.0.0.1:3306
+ Source Server Version : 80041
+ Source Host           : localhost:3306
  Source Schema         : trade
 
  Target Server Type    : MySQL
- Target Server Version : 50726 (5.7.26)
+ Target Server Version : 80041
  File Encoding         : 65001
 
- Date: 18/03/2025 15:57:00
+ Date: 09/04/2025 00:28:33
 */
 
 SET NAMES utf8mb4;
@@ -22,11 +22,11 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- ----------------------------
 DROP TABLE IF EXISTS `account_trade`;
 CREATE TABLE `account_trade`  (
-  `id` bigint(11) NOT NULL,
+  `id` bigint(0) NOT NULL,
   `buyer` tinyint(1) NOT NULL,
   `commission` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `commissionAsset` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `orderId` bigint(20) NOT NULL,
+  `orderId` bigint(0) NOT NULL,
   `price` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `qty` decimal(20, 10) NOT NULL,
   `quoteQty` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -34,20 +34,20 @@ CREATE TABLE `account_trade`  (
   `side` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `positionSide` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `symbol` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `time` bigint(20) NOT NULL,
+  `time` bigint(0) NOT NULL,
   `maker` tinyint(1) NOT NULL,
-  `userId` int(11) NULL DEFAULT NULL,
+  `userId` int(0) NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = MyISAM AUTO_INCREMENT = 6031205750 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = MyISAM AUTO_INCREMENT = 6031205750 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for combine_order
 -- ----------------------------
 DROP TABLE IF EXISTS `combine_order`;
 CREATE TABLE `combine_order`  (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `startTime` bigint(20) NULL DEFAULT NULL,
-  `endTime` bigint(20) NULL DEFAULT NULL,
+  `id` int(0) NOT NULL AUTO_INCREMENT,
+  `startTime` bigint(0) NULL DEFAULT NULL,
+  `endTime` bigint(0) NULL DEFAULT NULL,
   `symbol` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `pnl` float NULL DEFAULT NULL,
   `positionSide` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
@@ -61,9 +61,10 @@ CREATE TABLE `combine_order`  (
   `closePrice` float NULL DEFAULT NULL,
   `originOrders` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL,
   `commission` float NULL DEFAULT NULL,
-  `userId` int(11) NULL DEFAULT NULL,
+  `userId` int(0) NULL DEFAULT NULL,
+  `tags` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = MyISAM AUTO_INCREMENT = 15217 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = MyISAM AUTO_INCREMENT = 18347 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for order
@@ -71,7 +72,7 @@ CREATE TABLE `combine_order`  (
 DROP TABLE IF EXISTS `order`;
 CREATE TABLE `order`  (
   `symbol` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `orderId` bigint(20) NOT NULL,
+  `orderId` bigint(0) NOT NULL,
   `clientOrderId` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `price` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `reduceOnly` tinyint(1) NOT NULL,
@@ -84,8 +85,8 @@ CREATE TABLE `order`  (
   `type` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `side` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `stopPrice` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `time` bigint(20) NOT NULL,
-  `updateTime` bigint(20) NOT NULL,
+  `time` bigint(0) NOT NULL,
+  `updateTime` bigint(0) NOT NULL,
   `workingType` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `activatePrice` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `priceRate` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -96,41 +97,43 @@ CREATE TABLE `order`  (
   `closePosition` tinyint(1) NOT NULL,
   `priceMatch` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `selfTradePreventionMode` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `goodTillDate` int(11) NOT NULL,
+  `goodTillDate` int(0) NOT NULL,
   `commision` float NULL DEFAULT NULL,
-  `userId` int(11) NULL DEFAULT NULL,
+  `userId` int(0) NULL DEFAULT NULL,
   PRIMARY KEY (`orderId`) USING BTREE
-) ENGINE = MyISAM CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = DYNAMIC;
+) ENGINE = MyISAM AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for plan
 -- ----------------------------
 DROP TABLE IF EXISTS `plan`;
 CREATE TABLE `plan`  (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id` int(0) NOT NULL AUTO_INCREMENT,
   `symbol` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `openPrice` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `lossPrice` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `winPrice` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
-  `notice` tinyint(4) NULL DEFAULT NULL,
-  `autoTrade` tinyint(4) NULL DEFAULT NULL,
-  `createTime` datetime NULL DEFAULT CURRENT_TIMESTAMP,
-  `updateTime` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `userId` int(11) NULL DEFAULT NULL,
+  `notice` tinyint(0) NULL DEFAULT NULL,
+  `autoTrade` tinyint(0) NULL DEFAULT NULL,
+  `createTime` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP(0),
+  `updateTime` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP(0) ON UPDATE CURRENT_TIMESTAMP(0),
+  `userId` int(0) NULL DEFAULT NULL,
+  `status` tinyint(0) NULL DEFAULT NULL,
+  `positionSide` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = MyISAM AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+) ENGINE = MyISAM AUTO_INCREMENT = 10 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for user
 -- ----------------------------
 DROP TABLE IF EXISTS `user`;
 CREATE TABLE `user`  (
-  `id` int(11) NOT NULL,
+  `id` int(0) NOT NULL,
   `token` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `miaoNoticeId` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `bnApiKey` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   `bnApiSecret` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = MyISAM CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+) ENGINE = MyISAM AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 SET FOREIGN_KEY_CHECKS = 1;

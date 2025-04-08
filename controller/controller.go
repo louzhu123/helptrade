@@ -20,10 +20,11 @@ func GetCombineOrderList(c *gin.Context) {
 
 	userInfo, _ := c.Get("user")
 	user := userInfo.(dao.User)
-	list, _ := dao.QueryCombineOrder(user.Id, req)
+	list,count, _ := dao.QueryCombineOrder(user.Id, req)
 
 	c.JSON(http.StatusOK, gin.H{
 		"data": list,
+		"count": count,
 	})
 }
 

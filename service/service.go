@@ -142,7 +142,7 @@ func FetchAllOrder(ctx Ctx, startUninxMilli int64) ([]*futures.Order, error) {
 	t := time.Now()
 	startTimeUnix := t.Unix()*1000 - 90*24*60*60*1000 + 1000*10 // 加个10s，访问过程中已经过了一秒的90天窗口
 	if startUninxMilli != 0 {
-		startTimeUnix = startTimeUnix - 1000*200
+		startTimeUnix = startUninxMilli - 1000*200
 	}
 
 	endTimeUnix := startTimeUnix + 7*24*60*60*1000
@@ -283,7 +283,7 @@ func CombineAccountOrder(ctx Ctx) []dao.CombineOrder {
 
 		tmpCombineOrder[v.Symbol] = tmpOrder
 
-		fmt.Println(tmpOrder.CurrentPostion)
+		// fmt.Println(tmpOrder.CurrentPostion)
 
 		if endFlag {
 			// diff := tmpOrder.Order.TotalCloseCumQuote - tmpOrder.Order.TotalOpenCumQuote
@@ -305,10 +305,10 @@ func CombineAccountOrder(ctx Ctx) []dao.CombineOrder {
 		}
 	}
 
-	for _, v := range combineOrderList {
-		t := time.UnixMilli(v.StartTime).Format("2006-01-02 15:04:05")
-		fmt.Printf("%v %v %v pnl:%.2f \n", t, v.Side, v.Symbol, v.PnL)
-	}
+	// for _, v := range combineOrderList {
+	// 	t := time.UnixMilli(v.StartTime).Format("2006-01-02 15:04:05")
+	// 	fmt.Printf("%v %v %v pnl:%.2f \n", t, v.Side, v.Symbol, v.PnL)
+	// }
 
 	return combineOrderList
 }
@@ -333,7 +333,7 @@ func CombineAccountTrade(ctx Ctx) []dao.CombineOrder {
 
 	for _, v := range list {
 		endFlag := false
-		fmt.Println("当前accountrade", v.Qty)
+		// fmt.Println("当前accountrade", v.Qty)
 		// executedQtyFloat, _ := strconv.ParseFloat(v.Qty, 64) // 有的标的数量是带一个小数点的，避免浮点数计算问
 		// executedQtyFloat100 := executedQtyFloat * 100
 		executedQtyDecimal, _ := decimal.NewFromString(v.Qty)
@@ -363,7 +363,7 @@ func CombineAccountTrade(ctx Ctx) []dao.CombineOrder {
 		subResult, _ := executedQtyDecimal.Sub(tmpOrder.CurrentPostion).Float64()
 
 		if currentPostionFloat == 0 { // 新开仓
-			fmt.Println("新开仓")
+			// fmt.Println("新开仓")
 			tmpOrder.Order.StartTime = v.Time
 			tmpOrder.Order.PositionSide = v.PositionSide
 			tmpOrder.Order.Side = v.Side
@@ -386,7 +386,7 @@ func CombineAccountTrade(ctx Ctx) []dao.CombineOrder {
 			tmpOrder.Order.TotalCloseCumQuote += cumQuoteFloat
 		}
 
-		fmt.Println("当前仓位", tmpOrder.CurrentPostion)
+		// fmt.Println("当前仓位", tmpOrder.CurrentPostion)
 		if tmpOrder.CurrentCumQuote > tmpOrder.Order.MaxCumQuote {
 			tmpOrder.Order.MaxCumQuote = tmpOrder.CurrentCumQuote
 		}
@@ -396,7 +396,7 @@ func CombineAccountTrade(ctx Ctx) []dao.CombineOrder {
 		tmpCombineOrder[v.Symbol] = tmpOrder
 
 		if endFlag {
-			fmt.Println("平仓所有\n\n\n\n")
+			// fmt.Println("平仓所有\n\n\n\n")
 			// diff := tmpOrder.Order.TotalCloseCumQuote - tmpOrder.Order.TotalOpenCumQuote
 			// tmpOrder.Order.PnL = diff
 			// if tmpOrder.Order.Side == "BUY" {
@@ -433,7 +433,7 @@ func GetPlanList(userId int) ([]global.GetPlanListResPlan, error) {
 			Symbol:       item.Symbol,
 			OpenPrice:    item.OpenPrice,
 			LossPrice:    item.LossPrice,
-			WinPrice:     item.LossPrice,
+			WinPrice:     item.WinPrice,
 			Notice:       item.Notice,
 			AutoTrade:    item.AutoTrade,
 			PositionSide: item.PositionSide,

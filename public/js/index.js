@@ -1,10 +1,11 @@
 
-// let currentPage = 1;
-// let pageSize = 10; // 默认每页显示数量
+let currentPage = 1;
+let pageSize = 10; // 默认每页显示数量
+let totalPages = 10; // todo 根据返回
 
 // // 初始化分页
 async function initializePagination() {
-    filterTable({page:currentPage,pageSize:pageSize})
+    await filterTable({page:currentPage,pageSize:pageSize})
     createPaginationControls(totalPages);
 }
 
@@ -73,6 +74,7 @@ async function getCombineOrderStatis(filterParams) {
         dateMax: filterParams.dateMax ? filterParams.dateMax : 0,
         amountMin: filterParams.amountMin ? filterParams.amountMin : 0,
         amountMax: filterParams.amountMax ? filterParams.amountMax : 0,
+        tags: filterParams.tags ? filterParams.tags : "",
     });
     url = `${host}/getCombineOrderStatis?${params}`
     try {
@@ -107,6 +109,7 @@ async function getCombineOrderStatis(filterParams) {
 }
 
 async function fetchTransactions(filterParams) {
+    showLoader()
     const params = new URLSearchParams({
         openSide: filterParams.openSide ? filterParams.openSide : "ALL",
         symbol: filterParams.symbol ? filterParams.symbol : "ALL",
@@ -115,7 +118,8 @@ async function fetchTransactions(filterParams) {
         amountMin: filterParams.amountMin ? filterParams.amountMin : 0,
         amountMax: filterParams.amountMax ? filterParams.amountMax : 0,
         page: filterParams.page ? filterParams.page : 1,
-        pageSize: filterParams.pageSize ? filterParams.pageSize : 20
+        pageSize: filterParams.pageSize ? filterParams.pageSize : pageSize,
+        tags: filterParams.tags
     });
     const url = `${host}/getCombineOrderList?${params}`
     try {
@@ -139,6 +143,9 @@ async function fetchTransactions(filterParams) {
 
         // 解析JSON数据
         const data = await response.json();
+
+        totalPages = data.count / pageSize
+        totalPages =  totalPages < 1 ? 1 : totalPages
 
         // 转换数据格式（根据实际API响应结构调整）
         return data.data.map(item => ({
@@ -165,6 +172,8 @@ async function fetchTransactions(filterParams) {
         // 显示错误提示（可根据需要添加UI提示）
         alert(`数据加载失败: ${error.message}`);
         return []; // 返回空数组保证页面正常渲染
+    } finally {
+        hideLoader()
     }
 
 }
@@ -250,10 +259,10 @@ async function renderTable(transactions,statis) {
             <td></td>
             <td>${statis.avgFirstOpenCumQuote.toFixed(0)}</td>
             <td>${statis.avgMaxCumQuote.toFixed(0)}</td>
-            <td>${statis.avgTakeTime.toFixed(0)}分钟</td>
-            <td>总笔数:${statis.winTimes + statis.lossTimes}<br> 手续费:${statis.totalCommission.toFixed(2)}</td>
-            <td>净盈亏:${statis.totalPnlWithCommission.toFixed(2)}</td>
-            <td>胜率:${winRate.toFixed(2)} <br> 平均盈亏比:${avgWinLossRate.toFixed(2)} <br> 期望值:${expect}</td>
+            <td></td>
+            <td><span class="badge bg-success"> 总笔数:${statis.winTimes + statis.lossTimes} </span> <span class="badge bg-success">手续费:${statis.totalCommission.toFixed(2)}</span></td>
+            <td><span class="badge bg-success">净盈亏:${statis.totalPnlWithCommission.toFixed(2)}</span></td>
+            <td><span class="badge bg-success">胜率:${winRate.toFixed(2)}</span> <span class="badge bg-success">平均盈亏比:${avgWinLossRate.toFixed(2)}</span> <span class="badge bg-success"> 期望值:${expect}</span></td>
             <td></td>
             <td></td>
             <td></td>
@@ -276,14 +285,15 @@ async function renderTable(transactions,statis) {
             <td class="${getDiffPercent(transaction) >= 0 ? 'profit-positive' : 'profit-negative'}">
                 ${getDiffPercent(transaction)}%
             </td>
-            <td>${transaction.tags}</td>
+            <td class="tags">${transaction.tags}</td>
             <td class="editable review-content" data-toggle="tooltip" title="${transaction.review}">${transaction.review}</td>
             <td>
-                <button class="btn btn-sm btn-outline-primary edit-btn">编辑复盘</button>
-                ${getBsHref(transaction)}
+                <button class="btn btn-sm btn-outline-primary edit-btn">编辑</button>
             </td>
         </tr>
     `).join('');
+
+    //   ${getBsHref(transaction)}
 }
 
 // 初始化编辑功能
@@ -296,10 +306,15 @@ function initEdit() {
             const row = e.target.closest('tr');
             currentTransaction = {
                 id: Number(row.dataset.id),
-                review: row.querySelector('.review-content').innerText
+                review: row.querySelector('.review-content').innerText,
+                tags: row.querySelector('.tags').innerText
             };
 
             document.getElementById('reviewEdit').value = currentTransaction.review;
+            if (currentTransaction.tags != "") {
+                tags = JSON.parse(currentTransaction.tags)
+                updateTags()
+            }
             new bootstrap.Modal('#editModal').show();
         }
     });
@@ -412,6 +427,7 @@ async function filterTable(pageParam) {
     const dateMax = new Date(document.getElementById('dateMax').value).getTime() || 0;
     const openSide = document.querySelector('input[name="category"]:checked').value;
     const symbol = document.getElementById('textFilter').value || "ALL";
+    const tagsFilter = document.getElementById('tagsFilter').value || "";
     const params = {
         openSide: openSide,
         symbol: symbol,
@@ -419,25 +435,20 @@ async function filterTable(pageParam) {
         dateMax: dateMax,
         amountMin: amountMin,
         amountMax: amountMax,
+        tags: tagsFilter,
         page: pageParam.page,
         pageSize: pageParam.pageSize
     }
+    console.log(params)
     const transactions = await fetchTransactions(params);
     const statis = await getCombineOrderStatis(params);
     await renderTable(transactions,statis);
     initEdit();
 }
 
-let currentPage = 1;
-let pageSize = 10; // 默认每页显示数量
-let totalPages = 10; // todo 根据返回
-
 // 初始化
 (async function init() {
-    // const transactions = await fetchTransactions({});
-    // await renderTable(transactions);
-    // initEdit();
-    filterTable({})
+    await filterTable({page:1,pageSize:5})
     createPaginationControls(totalPages);
 })();
 
@@ -485,4 +496,13 @@ function updateTags() {
 function removeTag(index) {
     tags.splice(index, 1);
     updateTags();
+}
+
+
+function showLoader() {
+    document.getElementById('loader').style.display = 'flex';
+}
+
+function hideLoader() {
+    document.getElementById('loader').style.display = 'none';
 }
