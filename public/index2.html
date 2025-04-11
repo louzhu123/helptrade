@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>交易记录表格</title>
+
+    <!-- 依赖引入 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+    <script src="https://unpkg.com/element-plus"></script>
+    <script src="https://unpkg.com/@element-plus/icons-vue"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+    <style>
+        .app-container {
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .filter-group {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+        }
+
+        .amount-income {
+            color: #67c23a;
+            font-weight: 500;
+        }
+
+        .amount-expense {
+            color: #f56c6c;
+            font-weight: 500;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .custom-tag {
+            border-radius: 12px;
+            padding: 0 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div class="app-container">
+            <!-- 过滤条件 -->
+            <div class="filter-group">
+                <el-input v-model="filter.tradeNo" placeholder="搜索交易号" clearable style="width: 220px">
+                    <template #prefix>
+                        <el-icon>
+                            <Search />
+                        </el-icon>
+                    </template>
+                </el-input>
+
+                <el-select v-model="filter.type" placeholder="交易类型" clearable style="width: 150px">
+                    <el-option v-for="item in typeOptions" :key="item.value" :label="item.label" :value="item.value" />
+                </el-select>
+
+                <el-select v-model="filter.status" placeholder="交易状态" clearable style="width: 150px">
+                    <el-option v-for="item in statusOptions" :key="item.value" :label="item.label"
+                        :value="item.value" />
+                </el-select>
+
+                <el-button type="primary" @click="handleSearch">
+                    查询
+                </el-button>
+            </div>
+
+            <!-- 交易数据表格 -->
+            <el-table :data="tableData" style="width: 100%" border stripe v-loading="loading"
+                @sort-change="handleSortChange">
+
+                <el-table-column prop="type" label="类型" width="120">
+                    <template #default="{ row }">
+                        {{ row.symbol }}
+                    </template>
+                </el-table-column>
+
+                <!-- <el-table-column prop="amount" label="金额（元）" sortable="custom" align="right" width="150">
+                    <template #default="{ row }">
+                        <span :class="row.amount > 0 ? 'amount-income' : 'amount-expense'">
+                            {{ row.amount > 0 ? '+' : '' }}{{ formatCurrency(row.amount) }}
+                        </span>
+                    </template>
+                </el-table-column> -->
+
+                <!-- <el-table-column
+                    prop="counterparty"
+                    label="交易方"
+                    width="180"
+                /> -->
+
+                <!-- <el-table-column prop="status" label="状态" width="120">
+                    <template #default="{ row }">
+                        <el-tag :type="statusTypes[row.status]" class="custom-tag" effect="light">
+                            {{ statusLabels[row.status] }}
+                        </el-tag>
+                    </template>
+                </el-table-column>
+
+                <el-table-column prop="balance" label="账户余额" sortable="custom" align="right" width="150">
+                    <template #default="{ row }">
+                        {{ formatCurrency(row.balance) }}
+                    </template>
+                </el-table-column> -->
+            </el-table>
+
+            <!-- 分页 -->
+            <div style="margin-top: 20px; display: flex; justify-content: flex-end;">
+                <el-pagination v-model:current-page="pagination.current" v-model:page-size="pagination.size"
+                    :page-sizes="[10, 20, 50, 100]" :total="pagination.total" layout="total, sizes, prev, pager, next"
+                    background @current-change="loadData" @size-change="handleSizeChange" />
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref } = Vue;
+        const { ElTable, ElTableColumn, ElPagination, ElInput, ElSelect, ElOption, ElButton, ElTag, ElIcon } = ElementPlus;
+        const { Search, Money, Top, Bottom, Refresh } = ElementPlusIconsVue;
+
+        // 模拟交易数据生成
+        // const generateTradeData = (count = 100) => {
+        //     const types = ['recharge', 'withdraw', 'transfer', 'payment'];
+        //     const statusList = ['success', 'failed', 'processing'];
+        //     const counterparties = ['支付宝', '微信支付', '中国银行', '商户结算', '内部转账'];
+
+        //     return Array.from({ length: count }, (_, i) => ({
+        //         id: `TRADE${Date.now()}${i}`,
+        //         createTime: new Date(Date.now() - Math.random() * 7 * 86400000).toISOString(),
+        //         tradeNo: `NO${Math.floor(Math.random() * 1000000000)}`,
+        //         type: types[Math.floor(Math.random() * types.length)],
+        //         amount: (Math.random() * 10000 - 3000).toFixed(2),
+        //         balance: (Math.random() * 50000 + 1000).toFixed(2),
+        //         counterparty: counterparties[Math.floor(Math.random() * counterparties.length)],
+        //         status: statusList[Math.floor(Math.random() * statusList.length)]
+        //     }));
+        // };
+
+        const host = "/api"
+
+
+
+        // 模拟API请求
+        const mockApi = (params) => {
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    let data = generateTradeData(1000);
+
+                    // 筛选逻辑
+                    if (params.tradeNo) {
+                        data = data.filter(item => item.tradeNo.includes(params.tradeNo));
+                    }
+                    if (params.type) {
+                        data = data.filter(item => item.type === params.type);
+                    }
+                    if (params.status) {
+                        data = data.filter(item => item.status === params.status);
+                    }
+
+                    // 排序逻辑
+                    if (params.sortBy) {
+                        data.sort((a, b) => {
+                            const valA = a[params.sortBy];
+                            const valB = b[params.sortBy];
+                            return params.sortOrder === 'asc' ? valA - valB : valB - valA;
+                        });
+                    }
+
+                    // 分页
+                    const total = data.length;
+                    data = data.slice(
+                        (params.page - 1) * params.pageSize,
+                        params.page * params.pageSize
+                    );
+
+                    resolve({ data, total });
+                }, 500);
+            });
+        };
+
+        createApp({
+            components: {
+                ElTable, ElTableColumn, ElPagination, ElInput,
+                ElSelect, ElOption, ElButton, ElTag, ElIcon,
+                Search, Money, Top, Bottom, Refresh
+            },
+            setup() {
+                const tableData = ref([]);
+                const loading = ref(false);
+                const error = ref('');
+                const searchKey = ref('');
+
+                const filter = ref({
+                    tradeNo: '',
+                    type: '',
+                    status: ''
+                });
+
+                const pagination = ref({
+                    current: 1,
+                    size: 10,
+                    total: 0
+                });
+
+                const sortParams = ref({
+                    sortBy: '',
+                    sortOrder: ''
+                });
+
+                // 配置项
+                const typeOptions = [
+                    { value: 'recharge', label: '充值' },
+                    { value: 'withdraw', label: '提现' },
+                    { value: 'transfer', label: '转账' },
+                    { value: 'payment', label: '支付' }
+                ];
+
+                const statusOptions = [
+                    { value: 'success', label: '成功' },
+                    { value: 'failed', label: '失败' },
+                    { value: 'processing', label: '处理中' }
+                ];
+
+                const typeLabels = {
+                    recharge: '充值',
+                    withdraw: '提现',
+                    transfer: '转账',
+                    payment: '支付'
+                };
+
+                const typeIcons = {
+                    recharge: 'Top',
+                    withdraw: 'Bottom',
+                    transfer: 'Refresh',
+                    payment: 'Money'
+                };
+
+                const typeColors = {
+                    recharge: '#67c23a',
+                    withdraw: '#f56c6c',
+                    transfer: '#409eff',
+                    payment: '#e6a23c'
+                };
+
+                const statusLabels = {
+                    success: '成功',
+                    failed: '失败',
+                    processing: '处理中'
+                };
+
+                const statusTypes = {
+                    success: 'success',
+                    failed: 'danger',
+                    processing: 'warning'
+                };
+
+                // 金额格式化
+                const formatCurrency = (value) => {
+                    return Number(value).toLocaleString('zh-CN', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                };
+
+                // 加载数据
+                const loadData = async () => {
+                    console.log("loadData")
+                    loading.value = true;
+                    try {
+                        const params = {
+                            page: pagination.value.current,
+                            pageSize: pagination.value.size,
+                            ...filter.value,
+                            ...sortParams.value
+                        };
+
+                         await fetchData(params);
+                    } finally {
+                        loading.value = false;
+                    }
+                };
+
+                // 分页大小变化
+                const handleSizeChange = (size) => {
+                    pagination.value.size = size;
+                    pagination.value.current = 1;
+                    loadData();
+                };
+
+                // 排序变化
+                const handleSortChange = ({ prop, order }) => {
+                    sortParams.value = {
+                        sortBy: prop,
+                        sortOrder: order === 'ascending' ? 'asc' : 'desc'
+                    };
+                    loadData();
+                };
+
+                // 执行查询
+                const handleSearch = () => {
+                    pagination.value.current = 1;
+                    loadData();
+                };
+
+
+                const fetchData = async () => {
+                    loading.value = true;
+                    error.value = '';
+                    try {
+                        const params = {
+                            page: pagination.value.current,
+                            pageSize: pagination.value.size,
+                            // search: searchKey.value,
+                            // sort_field: sortParams.value.field,
+                            // sort_order: sortParams.value.order
+                        };
+
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const token = urlParams.get('token')
+
+                        // 真实API请求
+                        const response = await axios.get(`${host}/getCombineOrderList`, {
+                            params,
+                            timeout: 10000,
+                            headers: { 'token': token }
+                        },);
+
+                        // 处理响应数据（根据实际API结构调整）
+                        if (response.data.code === 200) {
+                            // console.log(response.data)
+                            tableData.value = response.data.data;
+                            // console.log(tableData.value)
+                            pagination.value.total = response.data.data.count;
+                        } else {
+                            error.value = response.data.message || '接口返回错误';
+                        }
+                    } catch (err) {
+                        handleRequestError(err);
+                    } finally {
+                        loading.value = false;
+                    }
+                };
+
+                // 错误处理
+                const handleRequestError = (err) => {
+                    console.log(err)
+                    if (err.response) {
+                        // HTTP状态码错误
+                        error.value = `请求错误：${err.response.status} ${err.response.data?.message || ''}`;
+                    } else if (err.request) {
+                        // 请求未收到响应
+                        error.value = '网络连接异常，请检查网络';
+                    } else {
+                        // 其他错误
+                        error.value = `请求失败：${err.message}`;
+                    }
+                };
+
+                // 初始化加载
+                loadData();
+
+                return {
+                    tableData,
+                    filter,
+                    pagination,
+                    loading,
+                    typeOptions,
+                    statusOptions,
+                    typeLabels,
+                    typeIcons,
+                    typeColors,
+                    statusLabels,
+                    statusTypes,
+                    loadData,
+                    formatCurrency,
+                    handleSizeChange,
+                    handleSortChange,
+                    handleSearch
+                };
+            }
+        }).use(ElementPlus).mount('#app');
+    </script>
+</body>
+
+</html>
