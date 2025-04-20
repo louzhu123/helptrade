@@ -17,7 +17,7 @@ func UpdateCombineOrderComment(userId, id int64, comment, tags string) {
 	fmt.Println("err", err)
 }
 
-func QueryCombineOrder(userId int, req global.GetCombineOrderListReq) ([]CombineOrder,int64, error) {
+func QueryCombineOrder(userId int, req global.GetCombineOrderListReq) ([]CombineOrder, int64, error) {
 	where := global.DB.Model(&CombineOrder{})
 	if req.OpenSide == "BUY" {
 		where.Where("positionSide", "LONG")
@@ -30,10 +30,10 @@ func QueryCombineOrder(userId int, req global.GetCombineOrderListReq) ([]Combine
 	}
 
 	if req.DateMax != 0 {
-		where.Where("startTime <= ?", req.DateMax)
+		where.Where("startTime <= ?", req.DateMax*1000)
 	}
 	if req.DateMin != 0 {
-		where.Where("startTIme >= ?", req.DateMin)
+		where.Where("startTIme >= ?", req.DateMin*1000)
 	}
 	if req.AmountMax != 0 {
 		where.Where("maxCumQuote <= ?", req.AmountMax)
@@ -45,22 +45,28 @@ func QueryCombineOrder(userId int, req global.GetCombineOrderListReq) ([]Combine
 		where.Where("tags LIKE ?", "%"+req.Tags+"%")
 	}
 
+	where.Where("userId", userId)
+
 	var count int64
 	where.Count(&count)
 
-	if req.Page != 0 &&  req.PageSize != 0 {
+	if req.Page != 0 && req.PageSize != 0 {
 		offset := (req.Page - 1) * req.PageSize
 		where.Offset(int(offset)).Limit(int(req.PageSize))
 	}
 
-	where.Where("userId", userId)
-
 	var list []CombineOrder
-	err := where.Order("startTime desc").Find(&list).Error
-	if err != nil {
-		return list,count, err
+	if req.SortOrder != "" {
+		where = where.Order(fmt.Sprintf("%s %s", req.SortBy, req.SortOrder))
+	} else {
+		where = where.Order("startTime desc")
 	}
-	return list,count, nil
+	err := where.Find(&list).Error
+	if err != nil {
+		return list, count, err
+	}
+	fmt.Println("list", list)
+	return list, count, nil
 }
 
 func GetCombineOrderStatis(userId int, req global.GetCombineOrderListReq) (CombineOrderStatis, error) {
@@ -89,10 +95,10 @@ func GetCombineOrderStatis(userId int, req global.GetCombineOrderListReq) (Combi
 	}
 
 	if req.DateMax != 0 {
-		where.Where("startTime <= ?", req.DateMax)
+		where.Where("startTime <= ?", req.DateMax*1000)
 	}
 	if req.DateMin != 0 {
-		where.Where("startTIme >= ?", req.DateMin)
+		where.Where("startTIme >= ?", req.DateMin*1000)
 	}
 	if req.AmountMax != 0 {
 		where.Where("maxCumQuote <= ?", req.AmountMax)

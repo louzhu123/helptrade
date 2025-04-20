@@ -54,7 +54,7 @@
         <div class="app-container">
             <!-- 过滤条件 -->
             <div class="filter-group">
-                <el-input v-model="filter.tradeNo" placeholder="搜索交易号" clearable style="width: 220px">
+                <el-input v-model="filter.symbol" placeholder="搜索交易品种" clearable style="width: 220px">
                     <template #prefix>
                         <el-icon>
                             <Search />
@@ -62,57 +62,127 @@
                     </template>
                 </el-input>
 
-                <el-select v-model="filter.type" placeholder="交易类型" clearable style="width: 150px">
+                <el-select v-model="filter.openSide" placeholder="交易类型" clearable style="width: 150px">
                     <el-option v-for="item in typeOptions" :key="item.value" :label="item.label" :value="item.value" />
                 </el-select>
 
-                <el-select v-model="filter.status" placeholder="交易状态" clearable style="width: 150px">
-                    <el-option v-for="item in statusOptions" :key="item.value" :label="item.label"
-                        :value="item.value" />
-                </el-select>
+                <!-- 数值范围筛选 -->
+
+                <el-input v-model="filter.amountMin" style="width: 200px" type="number"
+                    placeholder="最大持仓min"></el-input>
+                <span class="separator">-</span>
+                <el-input v-model="filter.amountMax" style="width: 200px" type="number"
+                    placeholder="最大持仓max"></el-input>
+
+
+                <el-date-picker v-model="filter.dateMin" type="date" placeholder="开始日期" value-format="X"
+                    :default-time="defaultTime"></el-date-picker>
+                <span class="separator">至</span>
+                <el-date-picker v-model="filter.dateMax" type="date" placeholder="结束日期" value-format="X"
+                    :default-time="defaultTime"></el-date-picker>
 
                 <el-button type="primary" @click="handleSearch">
                     查询
                 </el-button>
             </div>
 
+
+            <!-- 统计 -->
+            
+            <el-descriptions style="margin-bottom: 20px;" :column="10" :size="size" border>
+                <el-descriptions-item label="净盈亏">
+                    {{ Number(statisticsData.totalPnl).toFixed(2) }}
+                </el-descriptions-item>
+                <el-descriptions-item label="手续费">
+                    {{ Number(statisticsData.totalCommission).toFixed(2) }}
+                </el-descriptions-item>
+                <el-descriptions-item label="平均最大持仓">
+                    {{ Number(statisticsData.avgMaxCumQuote).toFixed(2) }}
+                </el-descriptions-item>
+                <el-descriptions-item label="胜率">
+                    {{ (statisticsData.winTimes / (statisticsData.winTimes + statisticsData.lossTimes) * 100).toFixed(2) }}%
+                </el-descriptions-item>
+            </el-descriptions>
+
             <!-- 交易数据表格 -->
             <el-table :data="tableData" style="width: 100%" border stripe v-loading="loading"
                 @sort-change="handleSortChange">
 
-                <el-table-column prop="type" label="类型" width="120">
+                <el-table-column prop="startTime" label="日期" width="120" sortable>
+                    <template #default="{ row }">
+                        {{ new Date(row.startTime).toISOString().split('T')[0] }}
+                    </template>
+                </el-table-column>
+
+                <el-table-column prop="type" label="交易品种" width="120" sortable>
                     <template #default="{ row }">
                         {{ row.symbol }}
                     </template>
                 </el-table-column>
 
-                <!-- <el-table-column prop="amount" label="金额（元）" sortable="custom" align="right" width="150">
+                <el-table-column prop="side" label="类型" width="120" sortable>
                     <template #default="{ row }">
-                        <span :class="row.amount > 0 ? 'amount-income' : 'amount-expense'">
-                            {{ row.amount > 0 ? '+' : '' }}{{ formatCurrency(row.amount) }}
-                        </span>
-                    </template>
-                </el-table-column> -->
-
-                <!-- <el-table-column
-                    prop="counterparty"
-                    label="交易方"
-                    width="180"
-                /> -->
-
-                <!-- <el-table-column prop="status" label="状态" width="120">
-                    <template #default="{ row }">
-                        <el-tag :type="statusTypes[row.status]" class="custom-tag" effect="light">
-                            {{ statusLabels[row.status] }}
-                        </el-tag>
+                        {{ row.side }}
                     </template>
                 </el-table-column>
 
-                <el-table-column prop="balance" label="账户余额" sortable="custom" align="right" width="150">
+
+                <el-table-column prop="openPrice" label="开仓价格" width="120">
                     <template #default="{ row }">
-                        {{ formatCurrency(row.balance) }}
+                        {{ row.openPrice }}
                     </template>
-                </el-table-column> -->
+                </el-table-column>
+
+
+                <el-table-column prop="closePrice" label="平仓价格" width="120">
+                    <template #default="{ row }">
+                        {{ row.closePrice }}
+                    </template>
+                </el-table-column>
+
+                <el-table-column prop="firstOpenCumQuote" label="开仓" width="120" sortable>
+                    <template #default="{ row }">
+                        {{ row.firstOpenCumQuote.toFixed(0) }}
+                    </template>
+                </el-table-column>
+
+                <el-table-column prop="maxCumQuote" label="最大持仓" width="120" sortable>
+                    <template #default="{ row }">
+                        {{ row.maxCumQuote.toFixed(0) }}
+                    </template>
+                </el-table-column>
+
+                <el-table-column prop="type" label="持仓时间" width="120">
+                    <template #default="{ row }">
+                        {{ getTakeTime(row) }}
+                    </template>
+                </el-table-column>
+
+
+                <el-table-column prop="commission" label="手续费" width="120" sortable>
+                    <template #default="{ row }">
+                        {{ row.commission.toFixed(2) }}
+                    </template>
+                </el-table-column>
+
+                <el-table-column prop="pnl" label="盈亏" width="120" sortable>
+                    <template #default="{ row }">
+                        {{ row.pnl.toFixed(1) }}
+                    </template>
+                </el-table-column>
+
+                <el-table-column prop="type" label="幅度" width="120">
+                    <template #default="{ row }">
+                        {{getDiffPercent(row) }} %
+                    </template>
+                </el-table-column>
+
+
+                <el-table-column prop="type" label="复盘" width="120">
+                    <template #default="{ row }">
+                        {{ row.comment }}
+                    </template>
+                </el-table-column>
             </el-table>
 
             <!-- 分页 -->
@@ -127,67 +197,9 @@
     <script>
         const { createApp, ref } = Vue;
         const { ElTable, ElTableColumn, ElPagination, ElInput, ElSelect, ElOption, ElButton, ElTag, ElIcon } = ElementPlus;
-        const { Search, Money, Top, Bottom, Refresh } = ElementPlusIconsVue;
-
-        // 模拟交易数据生成
-        // const generateTradeData = (count = 100) => {
-        //     const types = ['recharge', 'withdraw', 'transfer', 'payment'];
-        //     const statusList = ['success', 'failed', 'processing'];
-        //     const counterparties = ['支付宝', '微信支付', '中国银行', '商户结算', '内部转账'];
-
-        //     return Array.from({ length: count }, (_, i) => ({
-        //         id: `TRADE${Date.now()}${i}`,
-        //         createTime: new Date(Date.now() - Math.random() * 7 * 86400000).toISOString(),
-        //         tradeNo: `NO${Math.floor(Math.random() * 1000000000)}`,
-        //         type: types[Math.floor(Math.random() * types.length)],
-        //         amount: (Math.random() * 10000 - 3000).toFixed(2),
-        //         balance: (Math.random() * 50000 + 1000).toFixed(2),
-        //         counterparty: counterparties[Math.floor(Math.random() * counterparties.length)],
-        //         status: statusList[Math.floor(Math.random() * statusList.length)]
-        //     }));
-        // };
+        const { Search, Money, Top, Bottom, Refresh, List, User, Warning } = ElementPlusIconsVue;
 
         const host = "/api"
-
-
-
-        // 模拟API请求
-        const mockApi = (params) => {
-            return new Promise(resolve => {
-                setTimeout(() => {
-                    let data = generateTradeData(1000);
-
-                    // 筛选逻辑
-                    if (params.tradeNo) {
-                        data = data.filter(item => item.tradeNo.includes(params.tradeNo));
-                    }
-                    if (params.type) {
-                        data = data.filter(item => item.type === params.type);
-                    }
-                    if (params.status) {
-                        data = data.filter(item => item.status === params.status);
-                    }
-
-                    // 排序逻辑
-                    if (params.sortBy) {
-                        data.sort((a, b) => {
-                            const valA = a[params.sortBy];
-                            const valB = b[params.sortBy];
-                            return params.sortOrder === 'asc' ? valA - valB : valB - valA;
-                        });
-                    }
-
-                    // 分页
-                    const total = data.length;
-                    data = data.slice(
-                        (params.page - 1) * params.pageSize,
-                        params.page * params.pageSize
-                    );
-
-                    resolve({ data, total });
-                }, 500);
-            });
-        };
 
         createApp({
             components: {
@@ -202,9 +214,12 @@
                 const searchKey = ref('');
 
                 const filter = ref({
-                    tradeNo: '',
+                    symbol: '',
                     type: '',
-                    status: ''
+                    amountMin: '',
+                    amountMax: '',
+                    dateMin: 0,
+                    dateMax: 0
                 });
 
                 const pagination = ref({
@@ -220,44 +235,11 @@
 
                 // 配置项
                 const typeOptions = [
-                    { value: 'recharge', label: '充值' },
-                    { value: 'withdraw', label: '提现' },
-                    { value: 'transfer', label: '转账' },
-                    { value: 'payment', label: '支付' }
+                    { value: 'BUY', label: 'BUY' },
+                    { value: 'SELL', label: 'SELL' },
                 ];
 
-                const statusOptions = [
-                    { value: 'success', label: '成功' },
-                    { value: 'failed', label: '失败' },
-                    { value: 'processing', label: '处理中' }
-                ];
 
-                const typeLabels = {
-                    recharge: '充值',
-                    withdraw: '提现',
-                    transfer: '转账',
-                    payment: '支付'
-                };
-
-                const typeIcons = {
-                    recharge: 'Top',
-                    withdraw: 'Bottom',
-                    transfer: 'Refresh',
-                    payment: 'Money'
-                };
-
-                const typeColors = {
-                    recharge: '#67c23a',
-                    withdraw: '#f56c6c',
-                    transfer: '#409eff',
-                    payment: '#e6a23c'
-                };
-
-                const statusLabels = {
-                    success: '成功',
-                    failed: '失败',
-                    processing: '处理中'
-                };
 
                 const statusTypes = {
                     success: 'success',
@@ -275,17 +257,18 @@
 
                 // 加载数据
                 const loadData = async () => {
-                    console.log("loadData")
+
                     loading.value = true;
                     try {
-                        const params = {
-                            page: pagination.value.current,
-                            pageSize: pagination.value.size,
-                            ...filter.value,
-                            ...sortParams.value
-                        };
+                        // const params = {
+                        //     page: pagination.value.current,
+                        //     pageSize: pagination.value.size,
+                        //     ...filter.value,
+                        //     ...sortParams.value
+                        // };
 
-                         await fetchData(params);
+                        await fetchData();
+                        await fetchStatistics();
                     } finally {
                         loading.value = false;
                     }
@@ -321,9 +304,9 @@
                         const params = {
                             page: pagination.value.current,
                             pageSize: pagination.value.size,
-                            // search: searchKey.value,
-                            // sort_field: sortParams.value.field,
-                            // sort_order: sortParams.value.order
+
+                            ...filter.value,
+                            ...sortParams.value
                         };
 
                         const urlParams = new URLSearchParams(window.location.search);
@@ -337,11 +320,11 @@
                         },);
 
                         // 处理响应数据（根据实际API结构调整）
-                        if (response.data.code === 200) {
+
+                        if (response.data.data) {
                             // console.log(response.data)
                             tableData.value = response.data.data;
-                            // console.log(tableData.value)
-                            pagination.value.total = response.data.data.count;
+                            pagination.value.total = response.data.count;
                         } else {
                             error.value = response.data.message || '接口返回错误';
                         }
@@ -349,6 +332,55 @@
                         handleRequestError(err);
                     } finally {
                         loading.value = false;
+                    }
+                };
+
+
+                const statisticsData = ref({
+                    // avgFirstOpenCumQuote: 0,
+                    // avgLoss: 0,
+                    // avgLossWithCommission: 0,
+                    // avgMaxCumQuote: 0,
+                    // avgTakeTime: 0,
+                    // avgWin: 0,
+                    // avgWinWithCommission: 0,
+                    // lossTimes: 0,
+                    // totalCommission: 0,
+                    // totalPnl: '',
+                    // totalPnlWithCommission: 0,
+                    // winTimes: 0,
+                });
+                const fetchStatistics = async () => {
+                    // loading.value = true;
+                    error.value = '';
+                    try {
+                        const params = {
+                            ...filter.value,
+                        };
+
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const token = urlParams.get('token')
+
+                        // 真实API请求
+                        const response = await axios.get(`${host}/getCombineOrderStatis`, {
+                            params,
+                            timeout: 10000,
+                            headers: { 'token': token }
+                        },);
+
+                        // 处理响应数据（根据实际API结构调整）
+
+                        if (response.data.data) {
+                            statisticsData.value = response.data.data
+                            // Object.assign(statisticsData, response.data.data); // 将接口数据合并到响应式对象
+                            console.log(statisticsData)
+                        } else {
+                            error.value = response.data.message || '接口返回错误';
+                        }
+                    } catch (err) {
+                        handleRequestError(err);
+                    } finally {
+                        // loading.value = false;
                     }
                 };
 
@@ -367,6 +399,36 @@
                     }
                 };
 
+                // 计算盈亏幅度
+                const getDiffPercent = (transaction) => {
+                    let diff = transaction.closePrice - transaction.openPrice
+                    if (diff < 0) {
+                        diff = -diff
+                    }
+                    let percent = (diff / transaction.openPrice) * 100
+                    percent = percent.toFixed(1);
+                    if (transaction.pnl > 0) {
+                        return percent
+                    } else {
+                        return -percent
+                    }
+                }
+
+                // 计算持仓时间
+                const getTakeTime = (transaction) => {
+                    let second = (transaction.endTime - transaction.startTime) / 1000
+                    if (second < 60) {
+                        return Math.round(second) + "秒"
+                    }
+                    let min = second / 60
+                    if (min < 60) {
+                        return Math.round(min) + "分钟"
+                    }
+                    let h = min / 60
+                    return Math.round(h) + "小时"
+                }
+
+
                 // 初始化加载
                 loadData();
 
@@ -376,17 +438,15 @@
                     pagination,
                     loading,
                     typeOptions,
-                    statusOptions,
-                    typeLabels,
-                    typeIcons,
-                    typeColors,
-                    statusLabels,
-                    statusTypes,
+                    statisticsData,
                     loadData,
                     formatCurrency,
                     handleSizeChange,
                     handleSortChange,
-                    handleSearch
+                    handleSearch,
+
+                    getDiffPercent,
+                    getTakeTime
                 };
             }
         }).use(ElementPlus).mount('#app');

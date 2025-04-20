@@ -15,7 +15,10 @@ type GetCombineOrderListReq struct {
 	AmountMax int64  `json:"amountMax" form:"amountMax"`
 	Page      int64  `json:"page" form:"page"`
 	PageSize  int64  `json:"pageSize" form:"pageSize"`
-	Tags string `json:"tags" form:"tags"`
+	Tags      string `json:"tags" form:"tags"`
+
+	SortBy    string `form:"sortBy"`
+	SortOrder string `form:"sortOrder"`
 }
 
 type GetPlanListReq struct {
