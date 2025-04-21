@@ -46,6 +46,16 @@
             border-radius: 12px;
             padding: 0 10px;
         }
+
+        .positive {
+            color: #67c23a;
+            /* Element Plus 成功绿色 */
+        }
+
+        .negative {
+            color: #f56c6c;
+            /* Element Plus 警示红色 */
+        }
     </style>
 </head>
 
@@ -88,19 +98,38 @@
 
 
             <!-- 统计 -->
-            
-            <el-descriptions style="margin-bottom: 20px;" :column="10" :size="size" border>
+
+            <el-descriptions style="margin-bottom: 20px;" :column="5" :size="size" border>
                 <el-descriptions-item label="净盈亏">
-                    {{ Number(statisticsData.totalPnl).toFixed(2) }}
+                    {{ Number(statisticsData.totalPnlWithCommission).toFixed(2) }}
+                </el-descriptions-item>
+                <el-descriptions-item label="总盈利(不含手续费)">
+                    {{ Number(statisticsData.totalWinPnl).toFixed(2) }}
+                </el-descriptions-item>
+                <el-descriptions-item label="总亏损(不含手续费)">
+                    {{ Number(statisticsData.totalLossPnl).toFixed(2) }}
                 </el-descriptions-item>
                 <el-descriptions-item label="手续费">
                     {{ Number(statisticsData.totalCommission).toFixed(2) }}
+                </el-descriptions-item>
+                <el-descriptions-item label="资金费">
+                    {{ 0 }}
                 </el-descriptions-item>
                 <el-descriptions-item label="平均最大持仓">
                     {{ Number(statisticsData.avgMaxCumQuote).toFixed(2) }}
                 </el-descriptions-item>
                 <el-descriptions-item label="胜率">
-                    {{ (statisticsData.winTimes / (statisticsData.winTimes + statisticsData.lossTimes) * 100).toFixed(2) }}%
+                    {{ (statisticsData.winTimes / (statisticsData.winTimes + statisticsData.lossTimes) * 100).toFixed(2)
+                    }}%
+                </el-descriptions-item>
+                <el-descriptions-item label="盈亏比">
+                    {{ (statisticsData.avgWinWithCommission / statisticsData.avgLossWithCommission * -1 ).toFixed(2) }}
+                </el-descriptions-item>
+                <el-descriptions-item label="期望值">
+                    {{ getExpect(statisticsData).toFixed(2) }}
+                </el-descriptions-item>
+                <el-descriptions-item label="平均持仓时间">
+                    {{ formatTakeTime(statisticsData.avgTakeTime/1000) }}
                 </el-descriptions-item>
             </el-descriptions>
 
@@ -122,7 +151,10 @@
 
                 <el-table-column prop="side" label="类型" width="120" sortable>
                     <template #default="{ row }">
-                        {{ row.side }}
+                        <span :class="row.side == 'SELL' ? 'negative': 'positive'">
+                            {{ row.side }}
+                        </span>
+                   
                     </template>
                 </el-table-column>
 
@@ -154,7 +186,7 @@
 
                 <el-table-column prop="type" label="持仓时间" width="120">
                     <template #default="{ row }">
-                        {{ getTakeTime(row) }}
+                        {{ formatTakeTime((row.endTime - row.startTime)/1000) }}
                     </template>
                 </el-table-column>
 
@@ -167,22 +199,26 @@
 
                 <el-table-column prop="pnl" label="盈亏" width="120" sortable>
                     <template #default="{ row }">
-                        {{ row.pnl.toFixed(1) }}
+                        <span :class="getProfitClass(row.pnl)">
+                            {{ row.pnl.toFixed(1) }}
+                        </span>
                     </template>
                 </el-table-column>
 
                 <el-table-column prop="type" label="幅度" width="120">
                     <template #default="{ row }">
-                        {{getDiffPercent(row) }} %
+                        <span :class="getProfitClass(row.pnl)">
+                            {{getDiffPercent(row) }} %
+                        </span>
                     </template>
                 </el-table-column>
 
 
-                <el-table-column prop="type" label="复盘" width="120">
+                <!-- <el-table-column prop="type" label="复盘" width="120">
                     <template #default="{ row }">
                         {{ row.comment }}
                     </template>
-                </el-table-column>
+                </el-table-column> -->
             </el-table>
 
             <!-- 分页 -->
@@ -415,8 +451,8 @@
                 }
 
                 // 计算持仓时间
-                const getTakeTime = (transaction) => {
-                    let second = (transaction.endTime - transaction.startTime) / 1000
+                const formatTakeTime = (diffsecond) => {
+                    let second = diffsecond
                     if (second < 60) {
                         return Math.round(second) + "秒"
                     }
@@ -428,6 +464,16 @@
                     return Math.round(h) + "小时"
                 }
 
+                const getProfitClass = (profit) => {
+                    return profit > 0 ? 'positive' : 'negative';
+                };
+
+                const getExpect = (row) => {
+                    let winRate =  row.winTimes / (row.winTimes + row.lossTimes)
+                    let ykb = row.avgWinWithCommission / row.avgLossWithCommission * -1
+                    
+                    return winRate * ykb - (1-winRate) 
+                }
 
                 // 初始化加载
                 loadData();
@@ -446,7 +492,9 @@
                     handleSearch,
 
                     getDiffPercent,
-                    getTakeTime
+                    formatTakeTime,
+                    getProfitClass,
+                    getExpect
                 };
             }
         }).use(ElementPlus).mount('#app');

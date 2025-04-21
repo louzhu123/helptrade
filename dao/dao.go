@@ -117,6 +117,8 @@ func GetCombineOrderStatis(userId int, req global.GetCombineOrderListReq) (Combi
 		"sum(commission) as totalCommission",
 		"sum(pnl) as totalPnl",
 		"sum(pnl-commission) as totalPnlWithCommission",
+		"sum(IF(pnl > 0, pnl, NULL)) as totalWinPnl",
+		"sum(IF(pnl < 0, pnl, NULL)) as totalLossPnl",
 		"count(IF((pnl-commission) > 0, 1, NULL)) as winTimes",
 		"count(IF((pnl-commission) < 0, 1, NULL)) as lossTimes",
 		"avg(endTime - startTime) as avgTakeTime",

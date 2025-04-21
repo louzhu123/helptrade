@@ -128,4 +128,6 @@ type CombineOrderStatis struct {
 	AvgWinWithCommission   float64 `gorm:"column:avgWinWithCommission" json:"avgWinWithCommission"`
 	AvgLossWithCommission  float64 `gorm:"column:avgLossWithCommission" json:"avgLossWithCommission"`
 	TotalPnlWithCommission float64 `gorm:"column:totalPnlWithCommission" json:"totalPnlWithCommission"`
+	TotalWinPnl            float64 `gorm:"column:totalWinPnl" json:"totalWinPnl"`
+	TotalLossPnl           float64 `gorm:"column:totalLossPnl" json:"totalLossPnl"`
 }
