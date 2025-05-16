@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tag Input Demo</title>
+
+    <!-- 引入 Vue 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <!-- 引入 Element Plus 样式和组件 -->
+    <link rel="stylesheet" href="https://unpkg.com/element-plus/dist/index.css">
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://unpkg.com/element-plus"></script>
+</head>
+
+<body>
+    <div id="app">
+        <el-select v-model="selectedTags" multiple filterable allow-create default-first-option placeholder="请输入标签"
+            style="width: 400px" @change="handleChange" @remove-tag="handleRemove"
+            @visible-change="handleVisibleChange">
+            <!-- <el-option
+                v-for="item in suggestions"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+            /> -->
+        </el-select>
+        <el-button type="primary" @click="submitTags">
+            更新
+        </el-button>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+        const ElementPlus = window.ElementPlus;
+        const { ElMessage,ElTable, ElTableColumn, ElPagination, ElInput, ElSelect, ElOption, ElButton, ElTag, ElIcon } = ElementPlus;
+
+        createApp({
+            setup() {
+                const selectedTags = Vue.ref([]);
+                const inputValue = Vue.ref('');
+                const suggestions = Vue.ref([
+                    { value: 'HTML', label: 'HTML' },
+                    { value: 'CSS', label: 'CSS' },
+                    { value: 'JavaScript', label: 'JavaScript' },
+                    { value: 'Vue', label: 'Vue' },
+                    { value: 'Element', label: 'Element' },
+                ]);
+
+                const querySearch = (queryString) => {
+                    return queryString
+                        ? suggestions.value.filter(item =>
+                            item.value.toLowerCase().includes(queryString.toLowerCase()))
+                        : suggestions.value;
+                };
+
+                const handleChange = (value) => {
+                    console.log('当前选中的标签:', value);
+                };
+
+                const handleRemove = (tag) => {
+                    console.log('移除的标签:', tag);
+                };
+
+                const handleVisibleChange = (visible) => {
+                    if (!visible && inputValue.value) {
+                        // 当下拉框关闭时，如果有未提交的输入内容
+                        if (!selectedTags.value.includes(inputValue.value)) {
+                            selectedTags.value.push(inputValue.value);
+                        }
+                        inputValue.value = '';
+                    }
+                };
+
+                const host = "http://127.0.0.1:8080/api"
+
+                const submitTags = async () => {
+
+                    try {
+                        const response = await axios.post(host+"/updateLooks", {
+                            symbols: selectedTags.value
+                        }, {
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        });
+
+                        ElementPlus.ElMessage.success('提交成功');
+                        // 可选的提交后处理逻辑
+                        // selectedTags.value = [];  // 清空已选标签
+                    } catch (error) {
+                        console.log(error)
+                        let errorMessage = '提交失败，请重试';
+                        ElementPlus.ElMessage.error(errorMessage);
+                    } finally {
+
+                    }
+                };
+                return {
+                    selectedTags,
+                    inputValue,
+                    suggestions,
+                    querySearch,
+                    handleChange,
+                    handleRemove,
+                    handleVisibleChange,
+                    submitTags,
+                };
+            }
+        })
+            .use(ElementPlus)
+            .mount('#app');
+    </script>
+</body>
+
+</html>
