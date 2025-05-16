@@ -27,7 +27,7 @@
                 :value="item.value"
             /> -->
         </el-select>
-        <el-button type="primary" @click="submitTags">
+        <el-button type="primary" @click="submitLooks">
             更新
         </el-button>
     </div>
@@ -76,7 +76,7 @@
 
                 const host = "http://127.0.0.1:8080/api"
 
-                const submitTags = async () => {
+                const submitLooks = async () => {
 
                     try {
                         const response = await axios.post(host+"/updateLooks", {
@@ -98,6 +98,23 @@
 
                     }
                 };
+                
+                
+                const fetchLooks = async () => {
+                    try {
+                        const response = await axios.get(host+"/looks", {
+                            params: {},
+                            timeout: 5000
+                        });
+                        
+                        selectedTags.value = response.data.data
+                    } catch (error) {
+
+                    } finally {
+                    }
+                };
+
+                fetchLooks()
                 return {
                     selectedTags,
                     inputValue,
@@ -106,7 +123,8 @@
                     handleChange,
                     handleRemove,
                     handleVisibleChange,
-                    submitTags,
+                    submitLooks,
+                    fetchLooks,
                 };
             }
         })
